@@ -4,9 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from './ui/button';
+import { logoutRequest } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
 
   const [openModalLogout, setOpenModalLogout] = useState(false);
   const [openModalMenu, setOpenModalMenu] = useState(true);
@@ -15,11 +18,15 @@ export default function Sidebar() {
     setOpenModalLogout(!openModalLogout);
   };
 
+  async function handleLogout() {
+  await logoutRequest();
+  router.replace('/login');
+}
+
   const options = [
     { id: 1, icon: <Home size={22} />, path: '/main' },
     { id: 2, icon: <Users size={22} />, path: '/main/alunos' },
   ];
-  console.log(pathname);
   return (
     <>
       <nav className="bg-foreground text-background w-27 rounded-r-2xl h-screen flex-col items-center py-6 px-4 justify-between none hidden sm:flex">
@@ -108,7 +115,7 @@ export default function Sidebar() {
               <Button
                 className="bg-red-500 text-white px-4 py-2 rounded-xl hover:bg-red-700 flex-1 font-semibold"
                 onClick={() => {
-                  /* lógica de logout aqui */
+                  handleLogout();
                 }}
               >
                 Sair

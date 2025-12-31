@@ -33,3 +33,25 @@ export async function loginRequest({
   return res.json();
 }
 
+export async function getSession() {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
+    {
+      credentials: 'include',
+    }
+  );
+
+  if (!res.ok) return null;
+
+  const data = await res.json();
+  return data.user;
+}
+
+export async function logoutRequest() {
+  await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+}
+
+
