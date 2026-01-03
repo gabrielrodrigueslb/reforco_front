@@ -61,8 +61,9 @@ export function LoginForm({
         <CardContent className="grid p-0 md:grid-cols-2">
           <form className="p-6 md:p-8" onSubmit={handleLogin}>
             <FieldGroup>
-              <div className="flex flex-col items-center gap-2 text-center">
-                <h1 className="text-2xl font-bold">Bem vindo(a)</h1>
+              <div className="flex flex-col items-start gap-1 text-center sm:pb-3">
+                <img src="/logo-dri.png" className='w-20 h-20 mb-2 self-center' alt="" />
+                <h1 className="text-2xl font-bold">Login</h1>
                 <p className="text-muted-foreground text-balance">
                   Entre com sua conta para continuar
                 </p>
@@ -72,7 +73,7 @@ export function LoginForm({
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -132,24 +133,21 @@ export function LoginForm({
                 </Button>
               </Field>
 
-              <FieldDescription className="text-center">
-                Don&apos;t have an account? <a href="#">Sign up</a>
-              </FieldDescription>
+              
             </FieldGroup>
           </form>
           <div className="bg-muted relative hidden md:block">
             <Image
-              src="/fundo-login-dri.png"
+              src="/login-banner.png"
               alt="Image"
-              layout="fill"
+              fill
               className="absolute inset-0 object-cover dark:brightness-[0.2] dark:grayscale"
             />
           </div>
         </CardContent>
       </Card>
       <FieldDescription className="px-6 text-center">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{' '}
-        and <a href="#">Privacy Policy</a>.
+        Desenvolvido por  <a href="https://lintratech.cloud/" target='l_blank'>Lintratech</a> @ Todos os direitos reservados.
       </FieldDescription>
     </div>
   );

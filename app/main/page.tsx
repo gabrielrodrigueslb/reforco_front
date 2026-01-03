@@ -2,7 +2,7 @@
 
 export default function page() {
   return (
-    <main>
+    <main className="animate-in fade-in duration-100">
       INICIO
     </main>
   )

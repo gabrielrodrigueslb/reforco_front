@@ -36,15 +36,14 @@ export async function loginRequest({
 export async function getSession() {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
-    {
+    { method: 'GET',
       credentials: 'include',
     }
   );
 
-  if (!res.ok) return null;
+   if (!res.ok) return null;
 
-  const data = await res.json();
-  return data.user;
+  return res.json();
 }
 
 export async function logoutRequest() {
