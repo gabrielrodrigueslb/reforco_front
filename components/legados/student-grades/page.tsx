@@ -181,7 +181,7 @@ export default function StudentGrades() {
         </div>
         <Button
           onClick={() => setShowModal(true)}
-          className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white h-12 px-6 rounded-xl shadow-lg shadow-indigo-200"
+          className="bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] hover:from-[var(--brand-gradient-from-hover)] hover:to-[var(--brand-gradient-to-hover)] text-white h-12 px-6 rounded-xl shadow-lg shadow-indigo-200"
         >
           <Plus className="w-5 h-5 mr-2" />
           Lançar Nota
@@ -216,7 +216,7 @@ export default function StudentGrades() {
       </div>
 
       {/* Average Card */}
-      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 text-white">
+      <div className="bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] rounded-2xl p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-white/80">Média Geral</p>
@@ -236,7 +236,7 @@ export default function StudentGrades() {
           <BookOpen className="w-16 h-16 mx-auto text-slate-300 mb-4" />
           <h3 className="text-lg font-medium text-slate-600 mb-2">Nenhuma nota registrada</h3>
           <p className="text-slate-500 mb-6">Comece lançando a primeira nota</p>
-          <Button onClick={() => setShowModal(true)} className="bg-gradient-to-r from-indigo-500 to-purple-600">
+          <Button onClick={() => setShowModal(true)} className="bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]">
             <Plus className="w-5 h-5 mr-2" />
             Lançar Nota
           </Button>
@@ -436,7 +436,7 @@ export default function StudentGrades() {
             <Button 
               onClick={handleSubmit}
               disabled={createMutation.isPending}
-              className="bg-gradient-to-r from-indigo-500 to-purple-600"
+              className="bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
             >
               {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Salvar Nota

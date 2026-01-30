@@ -79,7 +79,7 @@ export default function WeeklyChart({ attendanceData }: WeeklyChartProps) {
       </div>
       <div className="flex items-center justify-center gap-6 mt-4">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-linear-to-r from-indigo-500 to-purple-500"></div>
+          <div className="w-3 h-3 rounded-full bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to-light)]"></div>
           <span className="text-sm text-slate-600">Presentes</span>
         </div>
         <div className="flex items-center gap-2">

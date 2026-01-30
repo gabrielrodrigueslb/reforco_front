@@ -12,7 +12,6 @@ import {
   MoreVertical,
   Eye,
   Trash2,
-  FileText,
   CalendarCheck,
   Search,
   Filter,
@@ -26,6 +25,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
+import PageTitle from '@/components/page-title'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -374,7 +374,10 @@ export default function Students() {
       {/* Header (premium + responsivo) */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl lg:text-3xl font-bold text-slate-800">Alunos</h1>
+          <PageTitle
+            title="Alunos"
+            className="text-2xl lg:text-3xl font-bold text-slate-800"
+          />
           <p className="text-slate-500">{students.length} alunos cadastrados</p>
         </div>
 
@@ -390,7 +393,7 @@ export default function Students() {
 
           <Button
             onClick={() => { resetNewForm(); setShowNewModal(true) }}
-            className="h-11 px-4 rounded-xl justify-center bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg shadow-indigo-200"
+            className="h-11 px-4 rounded-xl justify-center bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] hover:from-[var(--brand-gradient-from-hover)] hover:to-[var(--brand-gradient-to-hover)] text-white shadow-lg shadow-indigo-200"
           >
             <UserPlus className="w-5 h-5 mr-2" />
             Novo Aluno
@@ -556,7 +559,7 @@ export default function Students() {
           {!hasAnyFilter && (
             <Button
               onClick={() => { resetNewForm(); setShowNewModal(true) }}
-              className="bg-linear-to-r from-indigo-500 to-purple-600 h-11 rounded-xl"
+              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] h-11 rounded-xl"
             >
               <UserPlus className="w-5 h-5 mr-2" />
               Cadastrar Aluno
@@ -575,7 +578,7 @@ export default function Students() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-linear-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-200 overflow-hidden shrink-0">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-linear-to-br from-[var(--brand-gradient-from-light)] to-[var(--brand-gradient-to-light)] flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-200 overflow-hidden shrink-0">
                       {student.foto_aluno ? (
                         <Image
                           src={student.foto_aluno}
@@ -610,13 +613,6 @@ export default function Students() {
                         <Link href={createPageUrl(`${student.id}`)} className="flex items-center gap-2">
                           <Eye className="w-4 h-4" />
                           Ver Ficha
-                        </Link>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem asChild>
-                        <Link href={createPageUrl(`StudentGrades?id=${student.id}`)} className="flex items-center gap-2">
-                          <FileText className="w-4 h-4" />
-                          Boletim
                         </Link>
                       </DropdownMenuItem>
 
@@ -685,7 +681,7 @@ export default function Students() {
                   <TableRow key={student.id} className="hover:bg-slate-50">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold overflow-hidden">
+                        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[var(--brand-gradient-from-light)] to-[var(--brand-gradient-to-light)] flex items-center justify-center text-white font-bold overflow-hidden">
                           {student.foto_aluno ? (
                             <Image src={student.foto_aluno} className="object-cover w-full h-full" alt={student.full_name || 'Foto do aluno'} width={40} height={40} />
                           ) : (
@@ -722,13 +718,6 @@ export default function Students() {
                             <Link href={createPageUrl(`${student.id}`)} className="flex items-center gap-2">
                               <Eye className="w-4 h-4" />
                               Ver Ficha
-                            </Link>
-                          </DropdownMenuItem>
-
-                          <DropdownMenuItem asChild>
-                            <Link href={createPageUrl(`StudentGrades?id=${student.id}`)} className="flex items-center gap-2">
-                              <FileText className="w-4 h-4" />
-                              Boletim
                             </Link>
                           </DropdownMenuItem>
 

@@ -18,14 +18,30 @@ import {
   TrendingDown,
   AlertCircle,
   User,
-  FileText,
   Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import PageTitle from '@/components/page-title';
 
 // --- FUNÇÃO AUXILIAR DE URL ---
 const createPageUrl = (path: string) => {
@@ -87,6 +103,23 @@ const MOCK_STUDENTS = [
   },
 ];
 
+type GradeRecord = {
+  id: string;
+  student_id: string;
+  subject: string;
+  bimester: 1 | 2 | 3 | 4;
+  grade: number;
+};
+
+const MOCK_GRADES: GradeRecord[] = [
+  { id: 'g1', student_id: '1', subject: 'Português', bimester: 1, grade: 8.5 },
+  { id: 'g2', student_id: '1', subject: 'Português', bimester: 2, grade: 7.8 },
+  { id: 'g3', student_id: '1', subject: 'Matemática', bimester: 1, grade: 6.9 },
+  { id: 'g4', student_id: '1', subject: 'Matemática', bimester: 2, grade: 7.4 },
+  { id: 'g5', student_id: '2', subject: 'Português', bimester: 1, grade: 6.2 },
+  { id: 'g6', student_id: '2', subject: 'História', bimester: 1, grade: 8.0 },
+];
+
 const MOCK_GUARDIANS = [
   {
     id: '101',
@@ -131,6 +164,13 @@ export default function StudentProfile() {
   const [student, setStudent] = useState<any>(null);
   const [guardians, setGuardians] = useState<any[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
+  const [grades, setGrades] = useState<GradeRecord[]>(MOCK_GRADES);
+  const [openGradeModal, setOpenGradeModal] = useState(false);
+  const [gradeForm, setGradeForm] = useState({
+    subject: '',
+    bimester: '1',
+    grade: '',
+  });
 
   // Simula o fetch dos dados baseados no ID
   useEffect(() => {
@@ -230,6 +270,34 @@ export default function StudentProfile() {
     performanceConfig['Não avaliado'];
   const PerfIcon = perf.icon;
 
+  const studentGrades = grades.filter((g) => g.student_id === student.id);
+  const gradesBySubject = studentGrades.reduce<Record<string, GradeRecord[]>>((acc, grade) => {
+    acc[grade.subject] = acc[grade.subject] ? [...acc[grade.subject], grade] : [grade];
+    return acc;
+  }, {});
+  const overallAverage = studentGrades.length
+    ? (studentGrades.reduce((sum, g) => sum + g.grade, 0) / studentGrades.length).toFixed(1)
+    : '--';
+
+  const handleAddGrade = () => {
+    const gradeValue = Number(gradeForm.grade);
+    if (!gradeForm.subject.trim() || !Number.isFinite(gradeValue)) {
+      toast.error('Preencha disciplina e nota.');
+      return;
+    }
+    const newGrade: GradeRecord = {
+      id: Math.random().toString(36).slice(2, 9),
+      student_id: student.id,
+      subject: gradeForm.subject.trim(),
+      bimester: Number(gradeForm.bimester) as 1 | 2 | 3 | 4,
+      grade: gradeValue,
+    };
+    setGrades((prev) => [newGrade, ...prev]);
+    setGradeForm({ subject: '', bimester: '1', grade: '' });
+    setOpenGradeModal(false);
+    toast.success('Nota adicionada.');
+  };
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto p-4 sm:p-6 ">
       {/* Header */}
@@ -243,19 +311,14 @@ export default function StudentProfile() {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-2xl lg:text-3xl font-bold text-slate-800">
-            Ficha do Aluno
-          </h1>
+          <PageTitle
+            title="Ficha do Aluno"
+            className="text-2xl lg:text-3xl font-bold text-slate-800"
+          />
         </div>
         <div className="flex gap-3">
-          <Link href={createPageUrl(`StudentGrades?id=${student.id}`)}>
-            <Button variant="outline" className="rounded-xl">
-              <FileText className="w-4 h-4 mr-2" />
-              Boletim
-            </Button>
-          </Link>
           <Link href={createPageUrl(`StudentForm?id=${student.id}`)}>
-            <Button className="bg-linear-to-r from-indigo-500 to-purple-600 rounded-xl text-white">
+            <Button className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] rounded-xl text-white">
               <Edit className="w-4 h-4 mr-2" />
               Editar
             </Button>
@@ -265,7 +328,7 @@ export default function StudentProfile() {
 
       {/* Main Info Card */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="bg-linear-to-r from-indigo-500 to-purple-600 p-6">
+        <div className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] p-6">
           <div className="flex items-center gap-6">
             <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
               <Image
@@ -352,6 +415,70 @@ export default function StudentProfile() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Boletim integrado */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-800">Boletim</h3>
+            <p className="text-sm text-slate-500">Notas por disciplina e bimestre</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge className="bg-slate-100 text-slate-700">
+              MÃ©dia geral: {overallAverage}
+            </Badge>
+            <Button
+              onClick={() => setOpenGradeModal(true)}
+              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Adicionar nota
+            </Button>
+          </div>
+        </div>
+
+        {studentGrades.length === 0 ? (
+          <div className="rounded-xl border border-dashed p-6 text-center text-slate-500">
+            Nenhuma nota cadastrada para este aluno.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-slate-500 border-b">
+                  <th className="py-2 pr-4">Disciplina</th>
+                  <th className="py-2 pr-4">1Âº</th>
+                  <th className="py-2 pr-4">2Âº</th>
+                  <th className="py-2 pr-4">3Âº</th>
+                  <th className="py-2 pr-4">4Âº</th>
+                  <th className="py-2">MÃ©dia</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(gradesBySubject).map(([subject, subjectGrades]) => {
+                  const bimMap = subjectGrades.reduce<Record<number, number>>((acc, g) => {
+                    acc[g.bimester] = g.grade;
+                    return acc;
+                  }, {});
+                  const avg =
+                    subjectGrades.reduce((sum, g) => sum + g.grade, 0) / subjectGrades.length;
+                  return (
+                    <tr key={subject} className="border-b last:border-0">
+                      <td className="py-2 pr-4 font-medium text-slate-800">{subject}</td>
+                      {[1, 2, 3, 4].map((b) => (
+                        <td key={b} className="py-2 pr-4 text-slate-600">
+                          {bimMap[b] ?? '--'}
+                        </td>
+                      ))}
+                      <td className="py-2 text-slate-700 font-semibold">{avg.toFixed(1)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Details Grid */}
@@ -542,5 +669,68 @@ export default function StudentProfile() {
         </div>
       </div>
     </div>
+
+
+      {/* Modal de nota */}
+      <Dialog open={openGradeModal} onOpenChange={setOpenGradeModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Adicionar nota</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label>Disciplina</Label>
+              <Input
+                value={gradeForm.subject}
+                onChange={(e) => setGradeForm({ ...gradeForm, subject: e.target.value })}
+                className="mt-2"
+                placeholder="Ex: Matem?tica"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Bimestre</Label>
+                <Select
+                  value={gradeForm.bimester}
+                  onValueChange={(value) => setGradeForm({ ...gradeForm, bimester: value })}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1?</SelectItem>
+                    <SelectItem value="2">2?</SelectItem>
+                    <SelectItem value="3">3?</SelectItem>
+                    <SelectItem value="4">4?</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Nota</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={gradeForm.grade}
+                  onChange={(e) => setGradeForm({ ...gradeForm, grade: e.target.value })}
+                  className="mt-2"
+                  placeholder="Ex: 8.5"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenGradeModal(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAddGrade}
+              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] text-white"
+            >
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
   );
 }

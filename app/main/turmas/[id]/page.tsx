@@ -42,6 +42,19 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import PageTitle from '@/components/page-title'
+
+type ClassesServiceAPI = {
+  list: () => Promise<ClassItem[]>
+  update: (id: string, data: Partial<ClassItem>) => Promise<void>
+};
+
+type StudentsServiceAPI = {
+  list: () => Promise<Student[]>
+  update?: (id: string, data: Partial<Student>) => Promise<void>
+  setClass?: (id: string, classId: string) => Promise<void>
+};
+
 
 type ClassItem = {
   id: string
@@ -58,7 +71,8 @@ type ClassItem = {
 
 type Student = {
   id: string
-  name: string
+  name?: string
+  full_name?: string
   class_id: string
 }
 
@@ -102,14 +116,17 @@ export default function TurmaDetalhesPage() {
   async function load() {
     setLoading(true)
     try {
+      const classesService = ClassesService as ClassesServiceAPI
+      const studentsService = StudentsService as StudentsServiceAPI
+
       const [cls, sts] = await Promise.all([
-        ClassesService.list(),
-        StudentsService.list(),
+        classesService.list(),
+        studentsService.list(),
       ])
 
-      const found = (cls as any[]).find((c) => c.id === id) ?? null
+      const found = cls.find((c) => c.id === id) ?? null
       setTurma(found)
-      setStudents(sts as any)
+      setStudents(sts)
 
       if (found) {
         setFormData({
@@ -137,6 +154,8 @@ export default function TurmaDetalhesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
+  const getStudentName = (s: Student) => s.name || s.full_name || `Aluno ${s.id}`
+
   const alunosDaTurma = useMemo(
     () => students.filter((s) => s.class_id === id),
     [students, id]
@@ -147,7 +166,9 @@ export default function TurmaDetalhesPage() {
     const list = students.filter((s) => s.class_id !== id)
 
     if (!q) return list
-    return list.filter((s) => s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q))
+    return list.filter((s) =>
+      getStudentName(s).toLowerCase().includes(q) || s.id.toLowerCase().includes(q)
+    )
   }, [students, id, studentSearch])
 
   const capacity = useMemo(() => {
@@ -181,9 +202,10 @@ export default function TurmaDetalhesPage() {
 
     setSaving(true)
     try {
-      await ClassesService.update(turma.id, {
+      const classesService = ClassesService as ClassesServiceAPI
+      await classesService.update(turma.id, {
         ...formData,
-      } as any)
+      })
 
       toast.success('Turma atualizada!')
       setOpenEdit(false)
@@ -212,10 +234,12 @@ export default function TurmaDetalhesPage() {
     setAdding(studentId)
     try {
       // Preferencial: update por aluno
-      if ((StudentsService as any).update) {
-        await (StudentsService as any).update(studentId, { class_id: turma.id })
-      } else if ((StudentsService as any).setClass) {
-        await (StudentsService as any).setClass(studentId, turma.id)
+      const studentsService = StudentsService as StudentsServiceAPI
+
+      if (studentsService.update) {
+        await studentsService.update(studentId, { class_id: turma.id })
+      } else if (studentsService.setClass) {
+        await studentsService.setClass(studentId, turma.id)
       } else {
         // fallback local (não persiste no service) — mas mantém na tela:
         setStudents((prev) =>
@@ -238,10 +262,12 @@ export default function TurmaDetalhesPage() {
 
     setRemoving(studentId)
     try {
-      if ((StudentsService as any).update) {
-        await (StudentsService as any).update(studentId, { class_id: '' })
-      } else if ((StudentsService as any).setClass) {
-        await (StudentsService as any).setClass(studentId, '')
+      const studentsService = StudentsService as StudentsServiceAPI
+
+      if (studentsService.update) {
+        await studentsService.update(studentId, { class_id: '' })
+      } else if (studentsService.setClass) {
+        await studentsService.setClass(studentId, '')
       } else {
         setStudents((prev) =>
           prev.map((s) => (s.id === studentId ? { ...s, class_id: '' } : s))
@@ -301,7 +327,7 @@ export default function TurmaDetalhesPage() {
           <div className="flex items-center gap-2">
             <Button
               onClick={() => setOpenEdit(true)}
-              className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg shadow-indigo-200"
+              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] hover:from-[var(--brand-gradient-from-hover)] hover:to-[var(--brand-gradient-to-hover)] text-white shadow-lg shadow-indigo-200"
             >
               <Pencil className="w-4 h-4 mr-2" />
               Editar turma
@@ -316,7 +342,7 @@ export default function TurmaDetalhesPage() {
 
           <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div className="flex items-start gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+              <div className="h-14 w-14 rounded-2xl bg-linear-to-br from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] flex items-center justify-center shadow-lg shadow-indigo-200">
                 <GraduationCap className="w-7 h-7 text-white" />
               </div>
 
@@ -326,9 +352,10 @@ export default function TurmaDetalhesPage() {
                   <span className="text-sm font-medium">Detalhes da turma</span>
                 </div>
 
-                <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mt-1">
-                  {turma.name}
-                </h1>
+                <PageTitle
+                  title={turma.name}
+                  className="text-2xl md:text-3xl font-bold text-slate-900 mt-1"
+                />
 
                 <div className="flex flex-wrap gap-2 mt-3">
                   <Badge variant="outline">{turma.grade}</Badge>
@@ -354,7 +381,7 @@ export default function TurmaDetalhesPage() {
 
               <div className="mt-2 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-600"
+                  className="h-full bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
                   style={{ width: `${progressPct}%` }}
                 />
               </div>
@@ -421,33 +448,46 @@ export default function TurmaDetalhesPage() {
             </div>
           ) : (
             <ul className="divide-y">
-              {alunosDaTurma.map((s) => (
-                <li key={s.id} className="py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-slate-800 font-medium truncate">{s.name}</p>
-                    <p className="text-slate-500 text-sm">ID: {s.id}</p>
-                  </div>
+              {alunosDaTurma.map((s) => {
+                const displayName = getStudentName(s)
+                return (
+                  <li key={s.id} className="py-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-9 w-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-semibold">
+                        {displayName
+                          .split(' ')
+                          .slice(0, 2)
+                          .map((p) => p[0])
+                          .join('')
+                          .toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-slate-900 font-medium truncate">{displayName}</p>
+                        <p className="text-slate-500 text-sm">ID: {s.id}</p>
+                      </div>
+                    </div>
 
-                  <Button
-                    variant="outline"
-                    className="border-rose-200 text-rose-600 hover:bg-rose-50"
-                    onClick={() => removeStudentFromClass(s.id)}
-                    disabled={removing === s.id}
-                  >
-                    {removing === s.id ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Removendo...
-                      </>
-                    ) : (
-                      <>
-                        <UserMinus className="w-4 h-4 mr-2" />
-                        Remover
-                      </>
-                    )}
-                  </Button>
-                </li>
-              ))}
+                    <Button
+                      variant="outline"
+                      className="border-rose-200 text-rose-600 hover:bg-rose-50"
+                      onClick={() => removeStudentFromClass(s.id)}
+                      disabled={removing === s.id}
+                    >
+                      {removing === s.id ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Removendo...
+                        </>
+                      ) : (
+                        <>
+                          <UserMinus className="w-4 h-4 mr-2" />
+                          Remover
+                        </>
+                      )}
+                    </Button>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>
@@ -477,7 +517,7 @@ export default function TurmaDetalhesPage() {
             </p>
           </div>
 
-          <div className="mt-4 space-y-2 max-h-[420px] overflow-auto pr-1">
+          <div className="mt-4 space-y-2 max-h-105 overflow-auto pr-1">
             {alunosForaDaTurma.length === 0 ? (
               <div className="rounded-xl border border-dashed p-5 text-center">
                 <p className="text-slate-600 font-medium">Nenhum aluno encontrado</p>
@@ -486,35 +526,48 @@ export default function TurmaDetalhesPage() {
                 </p>
               </div>
             ) : (
-              alunosForaDaTurma.map((s) => (
-                <div
-                  key={s.id}
-                  className="rounded-xl border p-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors"
-                >
-                  <div className="min-w-0">
-                    <p className="text-slate-800 font-medium truncate">{s.name}</p>
-                    <p className="text-slate-500 text-xs">ID: {s.id}</p>
-                  </div>
-
-                  <Button
-                    onClick={() => addStudentToClass(s.id)}
-                    disabled={capacity.full || adding === s.id}
-                    className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
+              alunosForaDaTurma.map((s) => {
+                const displayName = getStudentName(s)
+                return (
+                  <div
+                    key={s.id}
+                    className="rounded-xl border p-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors"
                   >
-                    {adding === s.id ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Adicionando...
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Adicionar
-                      </>
-                    )}
-                  </Button>
-                </div>
-              ))
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-8 w-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-semibold">
+                        {displayName
+                          .split(' ')
+                          .slice(0, 2)
+                          .map((p) => p[0])
+                          .join('')
+                          .toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-slate-900 font-medium truncate">{displayName}</p>
+                        <p className="text-slate-500 text-xs">ID: {s.id}</p>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={() => addStudentToClass(s.id)}
+                      disabled={capacity.full || adding === s.id}
+                      className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] hover:from-[var(--brand-gradient-from-hover)] hover:to-[var(--brand-gradient-to-hover)] text-white"
+                    >
+                      {adding === s.id ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Adicionando...
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Adicionar
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )
+              })
             )}
           </div>
 
@@ -668,7 +721,7 @@ export default function TurmaDetalhesPage() {
             <Button
               onClick={saveTurma}
               disabled={saving}
-              className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
+              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] hover:from-[var(--brand-gradient-from-hover)] hover:to-[var(--brand-gradient-to-hover)] text-white"
             >
               {saving ? (
                 <>

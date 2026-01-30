@@ -147,7 +147,7 @@ export default function Grades() {
                 className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--brand-gradient-from-light)] to-[var(--brand-gradient-to-light)] flex items-center justify-center text-white font-bold">
                     {student.full_name?.charAt(0)?.toUpperCase()}
                   </div>
                   <div>

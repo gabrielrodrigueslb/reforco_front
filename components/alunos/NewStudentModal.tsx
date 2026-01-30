@@ -672,7 +672,7 @@ export default function NewStudentModal({
                 <Button
                   onClick={onSave}
                   disabled={isSaving}
-                  className="rounded-xl bg-linear-to-r from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-200"
+                  className="rounded-xl bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] text-white shadow-md shadow-indigo-200"
                 >
                   {isSaving ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />

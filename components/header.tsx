@@ -5,9 +5,10 @@ import { useEffect, useState } from 'react';
 import { FormatRole } from '@/lib/utils';
 import { NavUser } from './nav-user';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { Skeleton } from '@/components/ui/skeleton'; // Importe o Skeleton
+import { Skeleton } from '@/components/ui/skeleton';
 import { usePathname } from 'next/navigation';
-import { count } from 'console';
+import { Button } from '@/components/ui/button';
+import { PanelLeft } from 'lucide-react';
 
 interface User {
   id: string;
@@ -17,7 +18,11 @@ interface User {
   email: string;
 }
 
-export default function Header() {
+export default function Header({
+  onToggleSidebar,
+}: {
+  onToggleSidebar: () => void;
+}) {
   const [user, setUser] = useState<User | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
@@ -71,7 +76,18 @@ export default function Header() {
   return (
     <>
       <header className="pb-4 mb-4 border-b-2 flex justify-between items-center animate-in fade-in duration-100">
-        <h1 className="text-3xl font-bold opacity-80">{title}</h1>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={onToggleSidebar}
+            aria-label="Abrir menu"
+          >
+            <PanelLeft className="w-5 h-5" />
+          </Button>
+          <h1 className="text-3xl font-bold opacity-80">{title}</h1>
+        </div>
 
         {/* Envolvemos tudo no SidebarProvider para manter contexto se necessário */}
         <SidebarProvider className="w-auto min-h-0 min-w-0 flex items-center animate-in fade-in duration-100">

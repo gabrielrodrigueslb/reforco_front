@@ -60,6 +60,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import PageTitle from '@/components/page-title'
 
 /**
  * ✅ Mock-only (sem base44, sem react-query)
@@ -69,89 +70,181 @@ import { cn } from '@/lib/utils'
  */
 
 const uploadCategories = [
-  'Modelo de Boletim',
-  'Ficha de Aluno',
-  'Declaração',
+  'Pre-matricula',
+  'Comprovante de matricula',
+  'Declaracao',
   'Contrato',
   'Outro',
 ] as const
 
 const categoryColors: Record<(typeof uploadCategories)[number], string> = {
-  'Modelo de Boletim': 'bg-indigo-100 text-indigo-700',
-  'Ficha de Aluno': 'bg-purple-100 text-purple-700',
-  Declaração: 'bg-emerald-100 text-emerald-700',
+  'Pre-matricula': 'bg-indigo-100 text-indigo-700',
+  'Comprovante de matricula': 'bg-purple-100 text-purple-700',
+  Declaracao: 'bg-emerald-100 text-emerald-700',
   Contrato: 'bg-amber-100 text-amber-700',
   Outro: 'bg-slate-100 text-slate-700',
 }
 
-// Templates predefinidos
-const defaultTemplates = [
+// Templates predefinidos (HTML com placeholders)
+const defaultTemplates: TemplateItem[] = [
   {
     id: 'template-1',
-    name: 'Ficha de Matrícula',
-    category: 'Ficha de Aluno' as const,
-    content: `FICHA DE MATRÍCULA
+    name: 'Pre-matricula',
+    category: 'Pre-matricula' as const,
+    content: `<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pre-matricula</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: "Times New Roman", serif; color: #0f172a; background: #f8fafc; margin: 0; padding: 32px; }
+      .page { max-width: 820px; margin: 0 auto; background: #fff; padding: 40px; border: 1px solid #e2e8f0; }
+      .title { text-align: center; font-size: 22px; letter-spacing: 0.8px; margin-bottom: 20px; }
+      .meta { font-size: 12px; color: #475569; display: flex; justify-content: space-between; margin-bottom: 24px; }
+      .section { margin: 18px 0; }
+      .section h3 { font-size: 14px; text-transform: uppercase; margin: 0 0 10px 0; letter-spacing: 1px; }
+      .row { display: grid; grid-template-columns: 180px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; }
+      .label { font-size: 12px; color: #64748b; }
+      .value { font-size: 14px; }
+      .signature { margin-top: 40px; display: flex; justify-content: space-between; gap: 40px; }
+      .signature div { text-align: center; flex: 1; border-top: 1px solid #94a3b8; padding-top: 8px; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="title">FICHA DE PRE-MATRICULA</div>
+      <div class="meta">
+        <span>Escola: {{escola}}</span>
+        <span>Data de emissao: {{data_emissao}}</span>
+      </div>
 
-Nome Completo: _______________________________________________
-Data de Nascimento: ___/___/______
-Série/Ano: _______________ Turno: _______________
-Escola de Origem: _________________________________________
+      <div class="section">
+        <h3>Dados do Aluno</h3>
+        <div class="row"><div class="label">Nome completo</div><div class="value">{{student_name}}</div></div>
+        <div class="row"><div class="label">Data de nascimento</div><div class="value">{{student_birth}}</div></div>
+        <div class="row"><div class="label">CPF</div><div class="value">{{student_cpf}}</div></div>
+        <div class="row"><div class="label">RG</div><div class="value">{{student_rg}}</div></div>
+        <div class="row"><div class="label">Serie/Ano</div><div class="value">{{serie}}</div></div>
+        <div class="row"><div class="label">Turno</div><div class="value">{{turno}}</div></div>
+        <div class="row"><div class="label">Ano letivo</div><div class="value">{{ano_letivo}}</div></div>
+      </div>
 
-RESPONSÁVEL
-Nome: _____________________________________________________
-Parentesco: _______________________________________________
-Telefone: _________________________________________________
-E-mail: ___________________________________________________
+      <div class="section">
+        <h3>Responsavel</h3>
+        <div class="row"><div class="label">Nome</div><div class="value">{{responsavel_nome}}</div></div>
+        <div class="row"><div class="label">CPF</div><div class="value">{{responsavel_cpf}}</div></div>
+        <div class="row"><div class="label">Telefone</div><div class="value">{{responsavel_tel}}</div></div>
+      </div>
 
-Data: ___/___/______ Assinatura: __________________________`,
+      <div class="signature">
+        <div>Responsavel</div>
+        <div>Secretaria</div>
+      </div>
+    </div>
+  </body>
+</html>`,
     isTemplate: true,
     file_url: '',
-    file_type: 'text' as const,
+    file_type: 'html' as const,
   },
   {
     id: 'template-2',
-    name: 'Declaração de Matrícula',
-    category: 'Declaração' as const,
-    content: `DECLARAÇÃO DE MATRÍCULA
+    name: 'Comprovante de matricula',
+    category: 'Comprovante de matricula' as const,
+    content: `<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <title>Comprovante de Matricula</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: "Georgia", serif; color: #0f172a; background: #f1f5f9; margin: 0; padding: 32px; }
+      .page { max-width: 820px; margin: 0 auto; background: #fff; padding: 36px; border: 1px solid #e2e8f0; }
+      .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+      .badge { border: 1px solid #0f172a; padding: 6px 12px; font-size: 12px; letter-spacing: 1px; }
+      .title { font-size: 20px; margin: 0; }
+      .content { font-size: 14px; line-height: 1.7; }
+      .highlight { font-weight: bold; }
+      .footer { margin-top: 36px; display: flex; justify-content: space-between; font-size: 12px; }
+      .line { border-top: 1px solid #94a3b8; padding-top: 6px; text-align: center; width: 45%; }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <div>
+          <p class="title">Comprovante de Matricula</p>
+          <p>{{escola}} - {{cidade}}</p>
+        </div>
+        <div class="badge">MAT. {{matricula_numero}}</div>
+      </div>
 
-Declaro para os devidos fins que o(a) aluno(a) ______________________
-está regularmente matriculado(a) nesta instituição de ensino, cursando o 
-_____ ano/série no turno da ________, no ano letivo de ______.
+      <div class="content">
+        Declaramos que o(a) aluno(a) <span class="highlight">{{student_name}}</span>,
+        CPF {{student_cpf}}, esta regularmente matriculado(a) no
+        <span class="highlight">{{ano_letivo}}</span>, na turma <span class="highlight">{{turma}}</span>,
+        serie <span class="highlight">{{serie}}</span>, turno <span class="highlight">{{turno}}</span>.
+      </div>
 
-A presente declaração é válida por 30 dias a partir da data de emissão.
+      <div class="content" style="margin-top: 18px;">
+        Documento emitido em {{data_emissao}} para fins de comprovacao.
+      </div>
 
-Local e Data: _____________________________________________
-
-_______________________________
-Assinatura e Carimbo`,
+      <div class="footer">
+        <div class="line">Secretaria</div>
+        <div class="line">Direcao</div>
+      </div>
+    </div>
+  </body>
+</html>`,
     isTemplate: true,
     file_url: '',
-    file_type: 'text' as const,
+    file_type: 'html' as const,
   },
   {
     id: 'template-3',
-    name: 'Termo de Responsabilidade',
-    category: 'Contrato' as const,
-    content: `TERMO DE RESPONSABILIDADE
+    name: 'Declaracao de matricula',
+    category: 'Declaracao' as const,
+    content: `<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <title>Declaracao de Matricula</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: "Times New Roman", serif; color: #0f172a; background: #f8fafc; margin: 0; padding: 32px; }
+      .page { max-width: 820px; margin: 0 auto; background: #fff; padding: 40px; border: 1px solid #e2e8f0; }
+      .title { text-align: center; font-size: 20px; letter-spacing: 0.6px; margin-bottom: 24px; }
+      .content { font-size: 14px; line-height: 1.7; }
+      .footer { margin-top: 36px; display: flex; justify-content: space-between; font-size: 12px; }
+      .line { border-top: 1px solid #94a3b8; padding-top: 6px; text-align: center; width: 45%; }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="title">Declaracao de Matricula</div>
+      <div class="content">
+        Declaramos que o(a) aluno(a) <strong>{{student_name}}</strong>, CPF {{student_cpf}},
+        encontra-se regularmente matriculado(a) na escola <strong>{{escola}}</strong>,
+        cursando o <strong>{{serie}}</strong> no turno <strong>{{turno}}</strong>,
+        no ano letivo de <strong>{{ano_letivo}}</strong>.
+      </div>
 
-Eu, ________________________________, CPF __________________, 
-responsável pelo(a) aluno(a) ________________________________,
-declaro estar ciente e de acordo com:
+      <div class="content" style="margin-top: 16px;">
+        Declaracao emitida em {{data_emissao}}, para fins de comprovacao.
+      </div>
 
-1. Horários das aulas e necessidade de pontualidade
-2. Pagamento das mensalidades até o dia 10 de cada mês
-3. Comunicação de ausências com antecedência
-4. Acompanhamento do desenvolvimento escolar do aluno
-5. Respeito às normas da instituição
-
-Local e Data: _____________________________________________
-
-Responsável: ______________________________________________
-
-Instituição: ______________________________________________`,
+      <div class="footer">
+        <div class="line">Secretaria</div>
+        <div class="line">Direcao</div>
+      </div>
+    </div>
+  </body>
+</html>`,
     isTemplate: true,
     file_url: '',
-    file_type: 'text' as const,
+    file_type: 'html' as const,
   },
 ]
 
@@ -164,7 +257,7 @@ type TemplateItem = {
   content: string
   isTemplate: true
   file_url?: string
-  file_type: 'text' | 'pdf' | 'image'
+  file_type: 'text' | 'pdf' | 'image' | 'html'
 }
 
 type DocumentItem = {
@@ -191,7 +284,21 @@ function getFileIconByExt(fileType: string) {
 function templateTypeBadge(t: TemplateItem) {
   if (t.file_type === 'pdf') return 'PDF'
   if (t.file_type === 'image') return 'Imagem'
+  if (t.file_type === 'html') return 'HTML'
   return 'Texto'
+}
+
+function renderTemplateContent(template: TemplateItem, data: Record<string, string>) {
+  const base = template.content || ''
+  return base.replace(/{{\s*([a-z0-9_]+)\s*}}/gi, (_match, key) => data[key] ?? '')
+}
+
+function slugifyFilename(name: string) {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
 }
 
 export default function Documents() {
@@ -231,14 +338,36 @@ export default function Documents() {
     category: UploadCategory | ''
     content: string
     file_url: string
-    file_type: 'text' | 'pdf' | 'image'
+    file_type: 'text' | 'pdf' | 'image' | 'html'
   }>({
     name: '',
     category: '',
     content: '',
     file_url: '',
-    file_type: 'text',
+    file_type: 'html',
   })
+
+  const templateData = useMemo(
+    () => ({
+      escola: 'Colegio Exemplo',
+      endereco_escola: 'Rua Exemplo, 123',
+      cidade: 'Sao Paulo - SP',
+      student_name: 'Joao da Silva',
+      student_cpf: '000.000.000-00',
+      student_rg: '00.000.000-0',
+      student_birth: '01/01/2010',
+      serie: '5o Ano',
+      turma: '5A',
+      turno: 'Manha',
+      ano_letivo: '2026',
+      matricula_numero: 'MAT-2026-0001',
+      responsavel_nome: 'Maria da Silva',
+      responsavel_cpf: '000.000.000-00',
+      responsavel_tel: '(11) 90000-0000',
+      data_emissao: format(new Date(), 'dd/MM/yyyy'),
+    }),
+    []
+  )
 
   // Load mock documents (simulate API)
   useEffect(() => {
@@ -261,11 +390,11 @@ export default function Documents() {
           },
           {
             id: 'doc-2',
-            name: 'Declaração - Modelo',
-            category: 'Declaração',
+            name: 'Declaracao - Modelo',
+            category: 'Declaracao',
             file_url: 'https://example.com/declaracao.pdf',
             file_type: 'pdf',
-            description: 'Modelo de declaração (mock).',
+            description: 'Modelo de declaracao (mock).',
             created_date: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 5).toISOString(),
           },
         ]
@@ -443,7 +572,7 @@ export default function Documents() {
 
       setShowTemplateModal(false)
       setEditingTemplate(null)
-      setNewTemplate({ name: '', category: '', content: '', file_url: '', file_type: 'text' })
+      setNewTemplate({ name: '', category: '', content: '', file_url: '', file_type: 'html' })
     } catch (err) {
       console.error(err)
       toast.error('Não foi possível salvar template')
@@ -479,21 +608,41 @@ export default function Documents() {
     setPreviewTemplate(template)
   }
 
-  // Download/print template
-  const handlePrintOrOpenTemplate = (template: TemplateItem) => {
+  const downloadHtmlTemplate = (template: TemplateItem) => {
+    const rendered = renderTemplateContent(template, templateData)
+    const blob = new Blob([rendered], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${slugifyFilename(template.name) || 'documento'}.html`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  // Download/open template
+  const handleDownloadTemplate = (template: TemplateItem) => {
     if (template.file_url) {
       window.open(template.file_url, '_blank', 'noopener,noreferrer')
       return
     }
 
-    // texto: abre em uma janela e imprime
+    if (template.file_type === 'html') {
+      downloadHtmlTemplate(template)
+      return
+    }
+
     const printWindow = window.open('', '_blank')
     if (!printWindow) {
       toast.error('Pop-up bloqueado pelo navegador.')
       return
     }
 
-    const safe = (template.content || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    const safe = (template.content || '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
 
     printWindow.document.write(`
       <html>
@@ -513,6 +662,12 @@ export default function Documents() {
     `)
     printWindow.document.close()
   }
+
+  const previewHtml = useMemo(() => {
+    if (!previewTemplate || previewTemplate.file_url) return ''
+    if (previewTemplate.file_type !== 'html') return ''
+    return renderTemplateContent(previewTemplate, templateData)
+  }, [previewTemplate, templateData])
 
   const filteredDocs = useMemo(() => {
     const byCat =
@@ -541,7 +696,7 @@ export default function Documents() {
 
         <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex items-start gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+            <div className="h-14 w-14 rounded-2xl bg-linear-to-br from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] flex items-center justify-center shadow-lg shadow-indigo-200">
               <FileText className="w-7 h-7 text-white" />
             </div>
 
@@ -550,7 +705,10 @@ export default function Documents() {
                 <Sparkles className="w-4 h-4 text-indigo-500" />
                 <span className="text-sm font-medium">Central de Documentos</span>
               </div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 mt-1">Documentos</h1>
+              <PageTitle
+                title="Documentos"
+                className="text-2xl lg:text-3xl font-bold text-slate-900 mt-1"
+              />
               <p className="text-slate-500 mt-1">
                 Templates e arquivos da escola — tudo organizado em um só lugar.
               </p>
@@ -566,7 +724,7 @@ export default function Documents() {
             </div>
           </div>
 
-          <div className="w-full md:w-[420px] rounded-2xl border bg-white/60 p-4">
+          <div className="w-full md:w-105 rounded-2xl border bg-white/60 p-4">
             <p className="text-sm font-medium text-slate-800">Ações rápidas</p>
             <p className="text-xs text-slate-500 mt-1">
               Crie templates ou faça uploads (mock por enquanto).
@@ -577,10 +735,10 @@ export default function Documents() {
                 onClick={() => {
                   setActiveTab('templates')
                   setEditingTemplate(null)
-                  setNewTemplate({ name: '', category: '', content: '', file_url: '', file_type: 'text' })
+                  setNewTemplate({ name: '', category: '', content: '', file_url: '', file_type: 'html' })
                   setShowTemplateModal(true)
                 }}
-                className="bg-gradient-to-r from-indigo-500 to-purple-600 h-11 rounded-xl"
+                className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] h-11 rounded-xl"
               >
                 <Plus className="w-5 h-5 mr-2" />
                 Novo Template
@@ -592,7 +750,7 @@ export default function Documents() {
                   resetUploadForm()
                   setShowUploadModal(true)
                 }}
-                className="bg-gradient-to-r from-indigo-500 to-purple-600 h-11 rounded-xl"
+                className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] h-11 rounded-xl"
               >
                 <Upload className="w-5 h-5 mr-2" />
                 Upload Arquivo
@@ -603,7 +761,7 @@ export default function Documents() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v === 'uploads' ? 'uploads' : 'templates')}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <TabsList className="bg-white border border-slate-100 p-1">
             <TabsTrigger
@@ -627,10 +785,10 @@ export default function Documents() {
             <Button
               onClick={() => {
                 setEditingTemplate(null)
-                setNewTemplate({ name: '', category: '', content: '', file_url: '', file_type: 'text' })
+                setNewTemplate({ name: '', category: '', content: '', file_url: '', file_type: 'html' })
                 setShowTemplateModal(true)
               }}
-              className="bg-gradient-to-r from-indigo-500 to-purple-600 h-11 px-6 rounded-xl"
+              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] h-11 px-6 rounded-xl"
             >
               <Plus className="w-5 h-5 mr-2" />
               Novo Template
@@ -641,7 +799,7 @@ export default function Documents() {
                 resetUploadForm()
                 setShowUploadModal(true)
               }}
-              className="bg-gradient-to-r from-indigo-500 to-purple-600 h-11 px-6 rounded-xl"
+              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] h-11 px-6 rounded-xl"
             >
               <Upload className="w-5 h-5 mr-2" />
               Upload Arquivo
@@ -700,9 +858,13 @@ export default function Documents() {
                           Visualizar
                         </DropdownMenuItem>
 
-                        <DropdownMenuItem onClick={() => handlePrintOrOpenTemplate(template)}>
+                        <DropdownMenuItem onClick={() => handleDownloadTemplate(template)}>
                           <Download className="w-4 h-4 mr-2" />
-                          {template.file_url ? 'Abrir/baixar' : 'Imprimir'}
+                          {template.file_url
+                            ? 'Abrir/baixar'
+                            : template.file_type === 'html'
+                              ? 'Baixar HTML'
+                              : 'Imprimir'}
                         </DropdownMenuItem>
 
                         <DropdownMenuItem
@@ -734,7 +896,9 @@ export default function Documents() {
 
                   {template.content && !template.file_url && (
                     <p className="text-sm text-slate-500 line-clamp-3">
-                      {template.content.substring(0, 120)}...
+                      {template.file_type === 'html'
+                        ? 'Documento HTML com placeholders.'
+                        : `${template.content.substring(0, 120)}...`}
                     </p>
                   )}
 
@@ -744,11 +908,15 @@ export default function Documents() {
                       Ver
                     </Button>
                     <Button
-                      className="bg-gradient-to-r from-indigo-500 to-purple-600"
-                      onClick={() => handlePrintOrOpenTemplate(template)}
+                      className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
+                      onClick={() => handleDownloadTemplate(template)}
                     >
                       <Download className="w-4 h-4 mr-2" />
-                      {template.file_url ? 'Abrir' : 'Imprimir'}
+                      {template.file_url
+                        ? 'Abrir'
+                        : template.file_type === 'html'
+                          ? 'Baixar HTML'
+                          : 'Imprimir'}
                     </Button>
                   </div>
                 </div>
@@ -791,7 +959,7 @@ export default function Documents() {
                 ))}
               </div>
 
-              <div className="relative w-full lg:w-[360px]">
+              <div className="relative w-full lg:w-90">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <Input
                   value={searchDocs}
@@ -820,7 +988,7 @@ export default function Documents() {
                   resetUploadForm()
                   setShowUploadModal(true)
                 }}
-                className="bg-gradient-to-r from-indigo-500 to-purple-600"
+                className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
               >
                 <Upload className="w-5 h-5 mr-2" />
                 Upload Arquivo
@@ -836,7 +1004,7 @@ export default function Documents() {
                     key={doc.id}
                     className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group overflow-hidden"
                   >
-                    <div className="h-32 bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center relative">
+                    <div className="h-32 bg-linear-to-br from-slate-50 to-slate-100 flex items-center justify-center relative">
                       {['jpg', 'jpeg', 'png', 'gif', 'webp'].includes((doc.file_type || '').toLowerCase()) ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={doc.file_url} alt={doc.name} className="w-full h-full object-cover" />
@@ -995,7 +1163,7 @@ export default function Documents() {
             <Button
               onClick={handleUploadSubmit}
               disabled={!uploadForm.file_url || !uploadForm.category || savingUpload}
-              className="bg-gradient-to-r from-indigo-500 to-purple-600"
+              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
             >
               {savingUpload ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Salvar
@@ -1045,7 +1213,7 @@ export default function Documents() {
               <Label>Tipo de Template</Label>
               <div className="mt-2 p-4 bg-slate-50 rounded-xl border">
                 <p className="text-sm text-slate-600 mb-3">
-                  Você pode escrever um template em texto ou anexar um PDF/imagem (mock).
+                  Voce pode escrever um template em HTML ou anexar um PDF/imagem (mock).
                 </p>
 
                 {newTemplate.file_url ? (
@@ -1065,7 +1233,7 @@ export default function Documents() {
                     </div>
                     <button
                       onClick={() =>
-                        setNewTemplate((prev) => ({ ...prev, file_url: '', file_type: 'text' }))
+                        setNewTemplate((prev) => ({ ...prev, file_url: '', file_type: 'html' }))
                       }
                       className="text-slate-400 hover:text-rose-500"
                       type="button"
@@ -1099,13 +1267,16 @@ export default function Documents() {
 
             {!newTemplate.file_url && (
               <div>
-                <Label>Conteúdo do Template *</Label>
+                <Label>Conteudo HTML do Template *</Label>
                 <Textarea
                   value={newTemplate.content}
                   onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
                   className="mt-2 min-h-64 font-mono text-sm"
-                  placeholder="Digite o conteúdo do template..."
+                  placeholder="Cole o HTML do template..."
                 />
+                <p className="text-xs text-slate-500 mt-2">
+                  Placeholders: {'{{student_name}}'}, {'{{serie}}'}, {'{{turma}}'}, {'{{turno}}'}, {'{{ano_letivo}}'}, {'{{data_emissao}}'}
+                </p>
               </div>
             )}
           </div>
@@ -1116,7 +1287,7 @@ export default function Documents() {
             </Button>
             <Button
               onClick={handleSaveTemplate}
-              className="bg-gradient-to-r from-indigo-500 to-purple-600"
+              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
               disabled={savingTemplate}
             >
               {savingTemplate ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
@@ -1149,11 +1320,15 @@ export default function Documents() {
                     Editar
                   </Button>
                   <Button
-                    className="bg-gradient-to-r from-indigo-500 to-purple-600"
-                    onClick={() => handlePrintOrOpenTemplate(previewTemplate)}
+                    className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
+                    onClick={() => handleDownloadTemplate(previewTemplate)}
                   >
                     <Download className="w-4 h-4 mr-2" />
-                    {previewTemplate.file_url ? 'Abrir' : 'Imprimir'}
+                    {previewTemplate.file_url
+                      ? 'Abrir'
+                      : previewTemplate.file_type === 'html'
+                        ? 'Baixar HTML'
+                        : 'Imprimir'}
                   </Button>
                 </div>
               </div>
@@ -1174,6 +1349,12 @@ export default function Documents() {
                       className="w-full max-h-[70vh] object-contain bg-slate-50"
                     />
                   )
+                ) : previewTemplate.file_type === 'html' ? (
+                  <iframe
+                    srcDoc={previewHtml}
+                    className="w-full h-[70vh]"
+                    title={previewTemplate.name}
+                  />
                 ) : (
                   <div className="p-5">
                     <pre className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed">

@@ -2,14 +2,13 @@
 import {
   Users,
   LogOut,
-  LayoutDashboard,
   CalendarCheck,
-  BookOpen,
   GraduationCap,
   Calendar,
   FileText,
   ChevronRight,
   X,
+  LayoutDashboard,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -28,9 +27,14 @@ interface User {
     email: string;
   }
 
-export default function Sidebar() {
+export default function Sidebar({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [openModalLogout, setOpenModalLogout] = useState(false);
@@ -69,24 +73,31 @@ export default function Sidebar() {
     { name: 'Dashboard', icon: LayoutDashboard, page: '/main' },
     { name: 'Alunos', icon: Users, page: '/main/alunos' },
     { name: 'Frequência', icon: CalendarCheck, page: '/main/chamada' },
-    { name: 'Boletins', icon: BookOpen, page: 'Grades' },
+    // Boletim removido (agora integrado na ficha do aluno)
     { name: 'Turmas', icon: GraduationCap, page: '/main/turmas' },
     { name: 'Calendário', icon: Calendar, page: '/main/calendario' },
     { name: 'Documentos', icon: FileText, page: '/main/documentos' },
   ];
   return (
     <>
+      {open && (
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-black/30"
+          onClick={() => onOpenChange(false)}
+        />
+      )}
+
       <aside
         className={cn(
-          'h-screen max-h-screen w-72 bg-white border-r border-slate-200 z-50 flex flex-col',
-          'lg:translate-x-0 transition-transform duration-300',
-          sidebarOpen ? 'translate-x-0 sidebar-animate' : '-translate-x-full',
+          'fixed inset-y-0 left-0 h-screen w-72 bg-white border-r border-slate-200 z-50 flex flex-col',
+          'lg:static lg:h-dvh lg:translate-x-0 transition-transform duration-300',
+          open ? 'translate-x-0 sidebar-animate' : '-translate-x-full',
         )}
       >
         {/* Logo */}
         <div className="h-16 px-6 flex items-center justify-between border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-200 overflow-hidden border-black border">
+            <div className="w-10 h-10 rounded-full bg-linear-to-br from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] flex items-center justify-center shadow-lg shadow-indigo-200 overflow-hidden border-black border">
               <Image src="/logo.png" alt="logo dri" width={40} height={40} />
             </div>
             <div>
@@ -95,7 +106,7 @@ export default function Sidebar() {
             </div>
           </div>
           <button
-            onClick={() => setSidebarOpen(false)}
+            onClick={() => onOpenChange(false)}
             className="lg:hidden p-2 hover:bg-slate-100 rounded-lg"
           >
             <X className="w-5 h-5 text-slate-500" />
@@ -113,11 +124,11 @@ export default function Sidebar() {
                 <Link
                   key={item.page}
                   href={item.page}
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={() => onOpenChange(false)}
                   className={cn(
                     'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group',
                     isActive
-                      ? 'bg-linear-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-200'
+                      ? 'bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] text-white shadow-lg shadow-indigo-200'
                       : 'text-slate-600 hover:bg-slate-100',
                   )}
                 >
@@ -139,7 +150,7 @@ export default function Sidebar() {
         {user && (
           <div className="p-4 border-t border-slate-100">
             <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
-              <div className="w-10 h-10 rounded-full bg-linear-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-semibold overflow-hidden">
+              <div className="w-10 h-10 rounded-full bg-linear-to-br from-[var(--brand-gradient-from-light)] to-[var(--brand-gradient-to-light)] flex items-center justify-center text-white font-semibold overflow-hidden">
                 <img src={`${baseUrl}${user.avatarUrl}`} alt="" />
               </div>
               <div className="flex-1 min-w-0">

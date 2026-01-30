@@ -228,7 +228,7 @@ export default function ImportStudents() {
               <div className={cn(
                 "w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all",
                 step >= s.num 
-                  ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white" 
+                  ? "bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] text-white" 
                   : "bg-slate-100 text-slate-400"
               )}>
                 {step > s.num ? <Check className="w-5 h-5" /> : s.num}
@@ -378,7 +378,7 @@ export default function ImportStudents() {
             <Button 
               onClick={handleImport}
               disabled={importing || !columnMapping.full_name}
-              className="bg-gradient-to-r from-indigo-500 to-purple-600"
+              className="bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
             >
               {importing ? (
                 <>
@@ -441,7 +441,7 @@ export default function ImportStudents() {
             </Button>
             <Button 
               onClick={() => navigate(createPageUrl('Students'))}
-              className="bg-gradient-to-r from-indigo-500 to-purple-600"
+              className="bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
             >
               <Users className="w-5 h-5 mr-2" />
               Ver Alunos

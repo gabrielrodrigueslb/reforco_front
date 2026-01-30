@@ -47,6 +47,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import PageTitle from '@/components/page-title'
 
 const grades = [
   '1º Ano','2º Ano','3º Ano','4º Ano','5º Ano',
@@ -216,7 +217,10 @@ export default function TurmasPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-slate-800">Turmas</h1>
+          <PageTitle
+            title="Turmas"
+            className="text-2xl lg:text-3xl font-bold text-slate-800"
+          />
           <p className="text-slate-500 mt-1">
             {loading ? 'Carregando...' : `${classes.length} turmas cadastradas`}
           </p>
@@ -227,7 +231,7 @@ export default function TurmasPage() {
             resetForm()
             setShowModal(true)
           }}
-          className="bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white h-12 px-6 rounded-xl shadow-lg shadow-indigo-200"
+          className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] hover:from-[var(--brand-gradient-from-hover)] hover:to-[var(--brand-gradient-to-hover)] text-white h-12 px-6 rounded-xl shadow-lg shadow-indigo-200"
         >
           <Plus className="w-5 h-5 mr-2" />
           Nova Turma
@@ -251,7 +255,7 @@ export default function TurmasPage() {
               resetForm()
               setShowModal(true)
             }}
-            className="bg-linear-to-r from-indigo-500 to-purple-600"
+            className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
           >
             <Plus className="w-5 h-5 mr-2" />
             Criar Turma
@@ -268,7 +272,7 @@ export default function TurmasPage() {
                 className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+                  <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] flex items-center justify-center shadow-lg shadow-indigo-200">
                     <GraduationCap className="w-6 h-6 text-white" />
                   </div>
 
@@ -513,7 +517,7 @@ export default function TurmasPage() {
             <Button
               onClick={handleSubmit}
               disabled={saving}
-              className="bg-linear-to-r from-indigo-500 to-purple-600"
+              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
             >
               {saving ? 'Salvando...' : editingClass ? 'Salvar' : 'Criar Turma'}
             </Button>

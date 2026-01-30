@@ -310,7 +310,7 @@ export default function ImportStudentsModal({
               <Button
                 onClick={handleImport}
                 disabled={importing}
-                className="rounded-xl bg-linear-to-r from-indigo-500 to-purple-600 text-white"
+                className="rounded-xl bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] text-white"
               >
                 {importing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                 Importar {parsedData.length} Alunos

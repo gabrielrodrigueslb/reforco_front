@@ -158,7 +158,7 @@ export default function Classes() {
         </div>
         <Button
           onClick={() => { resetForm(); setShowModal(true); }}
-          className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white h-12 px-6 rounded-xl shadow-lg shadow-indigo-200"
+          className="bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] hover:from-[var(--brand-gradient-from-hover)] hover:to-[var(--brand-gradient-to-hover)] text-white h-12 px-6 rounded-xl shadow-lg shadow-indigo-200"
         >
           <Plus className="w-5 h-5 mr-2" />
           Nova Turma
@@ -179,7 +179,7 @@ export default function Classes() {
           <p className="text-slate-500 mb-6">Comece criando sua primeira turma</p>
           <Button 
             onClick={() => { resetForm(); setShowModal(true); }}
-            className="bg-gradient-to-r from-indigo-500 to-purple-600"
+            className="bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
           >
             <Plus className="w-5 h-5 mr-2" />
             Criar Turma
@@ -196,7 +196,7 @@ export default function Classes() {
                 className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] flex items-center justify-center shadow-lg shadow-indigo-200">
                     <GraduationCap className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex gap-2">
@@ -373,7 +373,7 @@ export default function Classes() {
             </Button>
             <Button 
               onClick={handleSubmit}
-              className="bg-gradient-to-r from-indigo-500 to-purple-600"
+              className="bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
             >
               {editingClass ? 'Salvar' : 'Criar Turma'}
             </Button>

@@ -48,40 +48,83 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #094ea7;
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: #ffffff; 
+  /* Texto principal: Não é preto, é um Azul Quase Preto (Navy) para suavidade */
+  --foreground: #0f172a; 
+
+  /* --- CARTÕES (CARDS) --- */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  /* --- CORES PRINCIPAIS (BRANDING) --- */
+  /* O Azul Oficial da Adriana */
+  --primary: #223590; 
+  /* Texto branco para leitura perfeita em cima do azul */
+  --primary-foreground: #ffffff; 
+
+  /* --- GRADIENTES (Já definidos anteriormente) --- */
+  --brand-gradient-from: #223590; 
+  --brand-gradient-to: #4c5fd1;   
+  --brand-gradient-from-hover: #1a2b75; 
+  --brand-gradient-to-hover: #3b4ba8;   
+  --brand-gradient-from-light: #6b7bd9; 
+  --brand-gradient-to-light: #8e9bf0;   
+
+  /* --- SECUNDÁRIO & ACENTOS --- */
+  /* Um azul muito pálido (ice blue) para fundos secundários, em vez de cinza */
+  --secondary: #f0f4ff; 
+  /* Texto azul escuro para contraste no fundo claro */
+  --secondary-foreground: #1e293b; 
+
+  /* Elementos neutros (cinza frio) */
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  /* Acentuação (Ex: Hover de itens de menu) - Azul pálido */
+  --accent: #f0f4ff;
+  --accent-foreground: #223590;
+
+  /* Destrutivo (Erro) - Vermelho padrão, mas legível */
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  /* --- BORDAS & INPUTS --- */
+  /* Cinza azulado suave para bordas finas */
+  --border: #e2e8f0; 
+  --input: #e2e8f0; 
+  /* O anel de foco (outline) deve ser o Amarelo da Marca para destaque ou o Azul */
+  /* Optei pelo Azul para seriedade, mas o Amarelo (#FFCE44) funciona para chamar atenção */
+  --ring: #223590; 
+
+  /* --- GRÁFICOS & DASHBOARDS (Paleta Espacial) --- */
+  /* 1. Azul Principal */
+  --chart-1: #223590; 
+  /* 2. Amarelo Ouro (Das estrelas/detalhes da arte) - CRUCIAL para contraste */
+  --chart-2: #ffce44; 
+  /* 3. Azul Claro (Do gradiente) */
+  --chart-3: #4c5fd1; 
+  /* 4. Laranja (Fogo do foguete - cor complementar) */
+  --chart-4: #f97316; 
+  /* 5. Cinza Espacial (Para dados neutros) */
+  --chart-5: #64748b; 
+
+  /* --- SIDEBAR (Barra Lateral) --- */
+  /* Mantendo clara como no light mode padrão */
+  --sidebar: #f8fafc; 
+  --sidebar-foreground: #0f172a; 
+  /* Item selecionado na sidebar vira o Azul da marca */
+  --sidebar-primary: #223590; 
+  --sidebar-primary-foreground: #ffffff; 
+  --sidebar-accent: #e2e8f0; 
+  --sidebar-accent-foreground: #0f172a; 
+  --sidebar-border: #e2e8f0; 
+  --sidebar-ring: #223590;
 }
 
-.dark {
+/* .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -114,7 +157,7 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
-
+ */
 @layer base {
   * {
     @apply border-border outline-ring/50;

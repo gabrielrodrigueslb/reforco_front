@@ -114,7 +114,7 @@ export default function StudentProfile() {
             </Button>
           </Link>
           <Link to={createPageUrl(`StudentForm?id=${student.id}`)}>
-            <Button className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl">
+            <Button className="bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] rounded-xl">
               <Edit className="w-4 h-4 mr-2" />
               Editar
             </Button>
@@ -124,7 +124,7 @@ export default function StudentProfile() {
 
       {/* Main Info Card */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
+        <div className="bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] p-6">
           <div className="flex items-center gap-6">
             <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-white text-3xl font-bold">
               {student.full_name?.charAt(0)?.toUpperCase()}

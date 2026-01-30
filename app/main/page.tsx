@@ -15,6 +15,7 @@ import WeeklyChart from '@/components/dashboard/WeeklyChart';
 import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
 import UpcomingEvents from '@/components/dashboard/UpcomingEvents';
 import { Skeleton } from '@/components/ui/skeleton';
+import PageTitle from '@/components/page-title';
 export interface DashboardData {
   students: Student[];
   classes: Class[];
@@ -207,9 +208,10 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-slate-800">
-          Dashboard
-        </h1>
+        <PageTitle
+          title="Dashboard"
+          className="text-2xl lg:text-3xl font-bold text-slate-800"
+        />
         <p className="text-slate-500 mt-1">Visão geral da sua escola</p>
       </div>
 

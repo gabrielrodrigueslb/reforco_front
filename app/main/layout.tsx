@@ -1,7 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import Sidebar from '@/components/sidebar';
-import Header from '@/components/header';
+import MainShell from '@/components/main-shell';
 
 export default async function MainLayout({
   children,
@@ -15,15 +14,5 @@ export default async function MainLayout({
     redirect('/');
   }
 
-  return (
-    <>
-      {/* HEADER FIXO */}
-      <main className=" flex-col-reverse sm:flex-row flex">
-        <Sidebar />
-        <section className="h-screen w-screen overflow-x-hidden p-4 animate-in fade-in fade-out duration-100">
-          {children}
-        </section>
-      </main>
-    </>
-  );
+  return <MainShell>{children}</MainShell>;
 }

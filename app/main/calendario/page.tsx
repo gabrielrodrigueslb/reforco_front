@@ -45,6 +45,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import PageTitle from '@/components/page-title'
 
 type CalendarEvent = {
   id: string
@@ -224,7 +225,10 @@ export default function CalendarPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-slate-800">Calendário</h1>
+          <PageTitle
+            title="Calendário"
+            className="text-2xl lg:text-3xl font-bold text-slate-800"
+          />
           <p className="text-slate-500 mt-1">Gerencie eventos e atividades</p>
         </div>
 
@@ -233,33 +237,33 @@ export default function CalendarPage() {
             resetForm()
             setShowModal(true)
           }}
-          className="bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white h-12 px-6 rounded-xl shadow-lg shadow-indigo-200"
+          className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] hover:from-[var(--brand-gradient-from-hover)] hover:to-[var(--brand-gradient-to-hover)] text-white h-11 px-5 rounded-xl shadow-lg shadow-indigo-200"
         >
           <Plus className="w-5 h-5 mr-2" />
           Novo Evento
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Calendar */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-4 md:p-5">
           {/* Month Navigation */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-              className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
               type="button"
             >
               <ChevronLeft className="w-5 h-5 text-slate-600" />
             </button>
 
-            <h2 className="text-xl font-semibold text-slate-800 capitalize">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-800 capitalize">
               {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
             </h2>
 
             <button
               onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-              className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
               type="button"
             >
               <ChevronRight className="w-5 h-5 text-slate-600" />
@@ -268,9 +272,18 @@ export default function CalendarPage() {
 
           {/* Weekday Headers */}
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
-              <div key={day} className="text-center text-sm font-medium text-slate-500 py-2">
-                {day}
+            {[
+              { short: 'D', long: 'Dom' },
+              { short: 'S', long: 'Seg' },
+              { short: 'T', long: 'Ter' },
+              { short: 'Q', long: 'Qua' },
+              { short: 'Q', long: 'Qui' },
+              { short: 'S', long: 'Sex' },
+              { short: 'S', long: 'Sab' },
+            ].map((day, idx) => (
+              <div key={`${day.long}-${idx}`} className="text-center text-xs sm:text-sm font-medium text-slate-500 py-1">
+                <span className="sm:hidden">{day.short}</span>
+                <span className="hidden sm:inline">{day.long}</span>
               </div>
             ))}
           </div>
@@ -278,7 +291,7 @@ export default function CalendarPage() {
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-1">
             {paddingDays.map((_, i) => (
-              <div key={`pad-${i}`} className="aspect-square" />
+              <div key={`pad-${i}`} className="h-10 sm:h-12 md:h-14 lg:h-18 xl:h-20" />
             ))}
 
             {days.map((day) => {
@@ -291,7 +304,7 @@ export default function CalendarPage() {
                   key={day.toISOString()}
                   onClick={() => setSelectedDate(day)}
                   className={cn(
-                    'aspect-square p-1 rounded-xl transition-all relative',
+                    'h-10 sm:h-12 md:h-14 lg:h-18 xl:h-20 w-full rounded-xl transition-all relative flex flex-col items-center justify-center',
                     isToday && 'ring-2 ring-indigo-500',
                     isSelected && 'bg-indigo-100',
                     !isSelected && 'hover:bg-slate-100'
@@ -309,7 +322,7 @@ export default function CalendarPage() {
                   </span>
 
                   {dayEvents.length > 0 && (
-                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                    <div className="mt-1 flex gap-0.5">
                       {dayEvents.slice(0, 3).map((event, i) => (
                         <div
                           key={`${event.id}-${i}`}
@@ -326,8 +339,8 @@ export default function CalendarPage() {
         </div>
 
         {/* Events Sidebar */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-          <h3 className="font-semibold text-slate-800 mb-4">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 md:p-5">
+          <h3 className="font-semibold text-slate-800 mb-3">
             {selectedDate
               ? format(selectedDate, "dd 'de' MMMM", { locale: ptBR })
               : 'Selecione uma data'}
@@ -443,7 +456,7 @@ export default function CalendarPage() {
                   value={formData.event_type}
                   onValueChange={(value) => setFormData({ ...formData, event_type: value })}
                 >
-                  <SelectTrigger className="mt-2 h-12 rounded-xl">
+                  <SelectTrigger className="mt-2 w-full !h-12 !rounded-xl">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
 
@@ -463,7 +476,7 @@ export default function CalendarPage() {
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="mt-2 h-12 rounded-xl"
+                  className="mt-2 h-12 rounded-xl w-full"
                 />
               </div>
             </div>
@@ -475,7 +488,7 @@ export default function CalendarPage() {
                   type="time"
                   value={formData.start_time}
                   onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                  className="mt-2 h-12 rounded-xl"
+                  className="mt-2 h-12 rounded-xl w-full"
                 />
               </div>
 
@@ -485,7 +498,7 @@ export default function CalendarPage() {
                   type="time"
                   value={formData.end_time}
                   onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                  className="mt-2 h-12 rounded-xl"
+                  className="mt-2 h-12 rounded-xl w-full"
                 />
               </div>
             </div>
@@ -496,7 +509,7 @@ export default function CalendarPage() {
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Detalhes do evento..."
-                className="mt-2 rounded-xl"
+                className="mt-2 rounded-xl w-full"
               />
             </div>
           </div>
@@ -506,7 +519,7 @@ export default function CalendarPage() {
               Cancelar
             </Button>
 
-            <Button onClick={handleSubmit} className="bg-linear-to-r from-indigo-500 to-purple-600">
+            <Button onClick={handleSubmit} className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]">
               {editingEvent ? 'Salvar' : 'Criar'}
             </Button>
           </DialogFooter>

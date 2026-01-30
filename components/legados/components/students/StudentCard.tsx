@@ -37,7 +37,7 @@ export default function StudentCard({ student, onDelete }) {
     <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--brand-gradient-from-light)] to-[var(--brand-gradient-to-light)] flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform">
             {student.full_name?.charAt(0)?.toUpperCase() || '?'}
           </div>
           <div>

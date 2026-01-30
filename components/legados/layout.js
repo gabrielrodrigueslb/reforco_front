@@ -89,7 +89,7 @@ export default function Layout({ children, currentPageName }) {
           <Menu className="w-6 h-6 text-slate-700" />
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] flex items-center justify-center">
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <span className="font-semibold text-slate-800">EduReforço</span>
@@ -117,7 +117,7 @@ export default function Layout({ children, currentPageName }) {
         {/* Logo */}
         <div className="h-16 px-6 flex items-center justify-between border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] flex items-center justify-center shadow-lg shadow-indigo-200">
               <GraduationCap className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -148,7 +148,7 @@ export default function Layout({ children, currentPageName }) {
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
                     isActive 
-                      ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-200" 
+                      ? "bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] text-white shadow-lg shadow-indigo-200" 
                       : "text-slate-600 hover:bg-slate-100"
                   )}
                 >
@@ -170,7 +170,7 @@ export default function Layout({ children, currentPageName }) {
         {user && (
           <div className="p-4 border-t border-slate-100">
             <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-semibold">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--brand-gradient-from-light)] to-[var(--brand-gradient-to-light)] flex items-center justify-center text-white font-semibold">
                 {user.full_name?.charAt(0) || 'U'}
               </div>
               <div className="flex-1 min-w-0">

@@ -64,7 +64,7 @@ export default function Students() {
           <p className="text-slate-500 mt-1">{students.length} alunos cadastrados</p>
         </div>
         <Link to={createPageUrl('StudentForm')}>
-          <Button className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white h-12 px-6 rounded-xl shadow-lg shadow-indigo-200">
+          <Button className="bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] hover:from-[var(--brand-gradient-from-hover)] hover:to-[var(--brand-gradient-to-hover)] text-white h-12 px-6 rounded-xl shadow-lg shadow-indigo-200">
             <UserPlus className="w-5 h-5 mr-2" />
             Novo Aluno
           </Button>
@@ -92,7 +92,7 @@ export default function Students() {
           </p>
           {!filters.search && !filters.grade && !filters.shift && !filters.status && !filters.difficulty && (
             <Link to={createPageUrl('StudentForm')}>
-              <Button className="bg-gradient-to-r from-indigo-500 to-purple-600">
+              <Button className="bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]">
                 <UserPlus className="w-5 h-5 mr-2" />
                 Cadastrar Aluno
               </Button>
