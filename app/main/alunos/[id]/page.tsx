@@ -19,6 +19,7 @@ import {
   AlertCircle,
   User,
   Clock,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +43,9 @@ import {
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import PageTitle from '@/components/page-title';
+import { toast } from 'sonner';
+import { StudentsService, StudentResponse } from '@/services/students.service';
+import { AttendanceService, AttendanceRecord } from '@/services/attendance.service';
 
 // --- FUNÇÃO AUXILIAR DE URL ---
 const createPageUrl = (path: string) => {
@@ -49,60 +53,6 @@ const createPageUrl = (path: string) => {
 };
 
 // --- DADOS MOCKADOS ---
-const MOCK_STUDENTS = [
-  {
-    id: '1',
-    full_name: 'Ana Júlia Souza',
-    foto_aluno: '/aluna.jpg',
-    birth_date: '2015-05-10',
-    grade: '4º Ano',
-    shift: 'Manhã',
-    status: 'Ativo',
-    origin_school: 'Escola Municipal 1',
-    blood_type: 'O+',
-    allergies: 'Amendoim',
-    medications: '',
-    difficulty_subjects: ['Matemática'],
-    difficulty_reaction: 'Fica quieta',
-    previous_tutoring: true,
-    performance_indicator: 'Melhorando',
-  },
-  {
-    id: '2',
-    full_name: 'Carlos Eduardo Lima',
-    foto_aluno: '/aluno.jpg',
-    birth_date: '2014-08-20',
-    grade: '5º Ano',
-    shift: 'Tarde',
-    status: 'Ativo',
-    origin_school: 'Colégio Estadual',
-    blood_type: 'A+',
-    allergies: '',
-    medications: 'Ritalina',
-    difficulty_subjects: ['Português', 'História'],
-    difficulty_reaction: 'Chora',
-    previous_tutoring: false,
-    performance_indicator: 'Atenção',
-  },
-  {
-    id: '3',
-    full_name: 'Carlos Eduardo Lima',
-    foto_aluno: '/aluno2.jpg',
-    birth_date: '2014-08-20',
-    grade: '5º Ano',
-    shift: 'Tarde',
-    status: 'Ativo',
-    origin_school: 'Colégio Estadual',
-    blood_type: 'A+',
-    allergies: '',
-    medications: 'Ritalina',
-    difficulty_subjects: ['Português', 'História'],
-    difficulty_reaction: 'Chora',
-    previous_tutoring: false,
-    performance_indicator: 'Atenção',
-  },
-];
-
 type GradeRecord = {
   id: string;
   student_id: string;
@@ -120,50 +70,15 @@ const MOCK_GRADES: GradeRecord[] = [
   { id: 'g6', student_id: '2', subject: 'História', bimester: 1, grade: 8.0 },
 ];
 
-const MOCK_GUARDIANS = [
-  {
-    id: '101',
-    student_id: '1',
-    full_name: 'Maria Souza',
-    relationship: 'Mãe',
-    phone: '(11) 99999-1111',
-    email: 'maria@email.com',
-  },
-  {
-    id: '102',
-    student_id: '1',
-    full_name: 'João Souza',
-    relationship: 'Pai',
-    phone: '(11) 99999-2222',
-    email: '',
-  },
-  {
-    id: '103',
-    student_id: '2',
-    full_name: 'Roberto Lima',
-    relationship: 'Pai',
-    phone: '(11) 98888-3333',
-    email: 'beto@email.com',
-  },
-];
-
-const MOCK_ATTENDANCE = [
-  { id: 'a1', student_id: '1', status: 'Presente', date: '2023-10-01' },
-  { id: 'a2', student_id: '1', status: 'Presente', date: '2023-10-02' },
-  { id: 'a3', student_id: '1', status: 'Ausente', date: '2023-10-03' }, // Falta
-  { id: 'a4', student_id: '1', status: 'Presente', date: '2023-10-04' },
-  { id: 'a5', student_id: '2', status: 'Presente', date: '2023-10-01' },
-];
-
 export default function StudentProfile() {
   const router = useRouter();
   const params = useParams(); // Captura o ID da URL (ex: alunos/1)
   const studentId = params?.id as string;
 
   const [isLoading, setIsLoading] = useState(true);
-  const [student, setStudent] = useState<any>(null);
+  const [student, setStudent] = useState<StudentResponse | null>(null);
   const [guardians, setGuardians] = useState<any[]>([]);
-  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [grades, setGrades] = useState<GradeRecord[]>(MOCK_GRADES);
   const [openGradeModal, setOpenGradeModal] = useState(false);
   const [gradeForm, setGradeForm] = useState({
@@ -172,29 +87,32 @@ export default function StudentProfile() {
     grade: '',
   });
 
-  // Simula o fetch dos dados baseados no ID
+  // Busca dados do aluno na API
   useEffect(() => {
-    if (studentId) {
-      setIsLoading(true);
-      // Simulação de delay de rede
-      setTimeout(() => {
-        const foundStudent = MOCK_STUDENTS.find((s) => s.id === studentId);
-        const foundGuardians = MOCK_GUARDIANS.filter(
-          (g) => g.student_id === studentId,
-        );
-        const foundAttendance = MOCK_ATTENDANCE.filter(
-          (a) => a.student_id === studentId,
-        );
-
-        setStudent(foundStudent);
-        setGuardians(foundGuardians);
-        setAttendanceRecords(foundAttendance);
-        setIsLoading(false);
-      }, 500);
-    } else {
-      // Se não tiver ID na URL, para de carregar e mostrará "não encontrado"
+    if (!studentId) {
       setIsLoading(false);
+      return;
     }
+
+    setIsLoading(true);
+    Promise.all([
+      StudentsService.getById(studentId),
+      AttendanceService.listByAluno(studentId),
+    ])
+      .then(([data, attendance]) => {
+        setStudent(data);
+        setGuardians(data.guardians || []);
+        setAttendanceRecords(attendance || []);
+      })
+      .catch(() => {
+        toast.error('Não foi possÃ­vel carregar o aluno');
+        setStudent(null);
+        setGuardians([]);
+        setAttendanceRecords([]);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, [studentId]);
 
   const calculateAge = (birthDate: string) => {
@@ -299,7 +217,8 @@ export default function StudentProfile() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto p-4 sm:p-6 ">
+    <>
+      <div className="space-y-6 max-w-4xl mx-auto p-4 sm:p-6 ">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -318,7 +237,7 @@ export default function StudentProfile() {
         </div>
         <div className="flex gap-3">
           <Link href={createPageUrl(`StudentForm?id=${student.id}`)}>
-            <Button className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] rounded-xl text-white">
+            <Button className="bg-linear-to-r from-(--brand-gradient-from) to-(--brand-gradient-to) rounded-xl text-white">
               <Edit className="w-4 h-4 mr-2" />
               Editar
             </Button>
@@ -328,15 +247,20 @@ export default function StudentProfile() {
 
       {/* Main Info Card */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] p-6">
+        <div className="bg-linear-to-r from-(--brand-gradient-from) to-(--brand-gradient-to) p-6">
           <div className="flex items-center gap-6">
             <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
-              <Image
-                src={student.foto_aluno}
-                alt={student.full_name || 'Foto do aluno'}
-                width={80}
-                height={80}
-              />
+              {student.foto_aluno ? (
+                <Image
+                  src={student.foto_aluno}
+                  alt={student.full_name || 'Foto do aluno'}
+                  width={80}
+                  height={80}
+                  unoptimized
+                />
+              ) : (
+                <span>{student.full_name?.charAt(0)?.toUpperCase()}</span>
+              )}
             </div>
             <div className="text-white">
               <h2 className="text-2xl font-bold">{student.full_name}</h2>
@@ -426,11 +350,11 @@ export default function StudentProfile() {
           </div>
           <div className="flex items-center gap-3">
             <Badge className="bg-slate-100 text-slate-700">
-              MÃ©dia geral: {overallAverage}
+              Média geral: {overallAverage}
             </Badge>
             <Button
               onClick={() => setOpenGradeModal(true)}
-              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] text-white"
+              className="bg-linear-to-r from-(--brand-gradient-from) to-[var(--brand-gradient-to)] text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
               Adicionar nota
@@ -448,11 +372,11 @@ export default function StudentProfile() {
               <thead>
                 <tr className="text-left text-slate-500 border-b">
                   <th className="py-2 pr-4">Disciplina</th>
-                  <th className="py-2 pr-4">1Âº</th>
-                  <th className="py-2 pr-4">2Âº</th>
-                  <th className="py-2 pr-4">3Âº</th>
-                  <th className="py-2 pr-4">4Âº</th>
-                  <th className="py-2">MÃ©dia</th>
+                  <th className="py-2 pr-4">1º</th>
+                  <th className="py-2 pr-4">2º</th>
+                  <th className="py-2 pr-4">3º</th>
+                  <th className="py-2 pr-4">4º</th>
+                  <th className="py-2">Média</th>
                 </tr>
               </thead>
               <tbody>
@@ -668,9 +592,7 @@ export default function StudentProfile() {
           </div>
         </div>
       </div>
-    </div>
-
-
+      </div>
       {/* Modal de nota */}
       <Dialog open={openGradeModal} onOpenChange={setOpenGradeModal}>
         <DialogContent className="max-w-md">
@@ -724,13 +646,13 @@ export default function StudentProfile() {
             </Button>
             <Button
               onClick={handleAddGrade}
-              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] text-white"
+              className="bg-linear-to-r from-(--brand-gradient-from) to-[var(--brand-gradient-to)] text-white"
             >
               Salvar
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
+    </>
   );
 }

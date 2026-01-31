@@ -30,6 +30,8 @@ type StudentData = {
   grade: string
   shift: string
   origin_school: string
+  cpf: string
+  address: string
   status: 'Ativo' | 'Inativo'
 
   allergies: string
@@ -65,6 +67,26 @@ function calcAge(isoDate?: string) {
   const m = today.getMonth() - d.getMonth()
   if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age--
   return age < 0 ? '' : String(age)
+}
+
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, '')
+}
+
+function formatCPF(value: string) {
+  const v = onlyDigits(value).slice(0, 11)
+  return v
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+}
+
+function formatPhone(value: string) {
+  const v = onlyDigits(value).slice(0, 11)
+  if (v.length <= 10) {
+    return v.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d)/, '$1-$2')
+  }
+  return v.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2')
 }
 
 type Props = {
@@ -161,7 +183,7 @@ export default function NewStudentModal({
         {/* Header Premium */}
         <DialogHeader className="p-0">
           <div className="relative">
-            <div className="h-16 w-full bg-linear-to-r from-indigo-500/15 via-purple-500/10 to-indigo-500/15" />
+            <div className=" w-full bg-linear-to-r from-indigo-500/15 via-purple-500/10 to-indigo-500/15" />
             <div className="absolute inset-0 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50" />
             <div className="relative px-6 py-5 flex items-center justify-between">
               <div>
@@ -333,6 +355,35 @@ export default function NewStudentModal({
                         </Select>
                       </div>
 
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">
+                          CPF do aluno <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          value={formatCPF(studentData.cpf)}
+                          onChange={(e) =>
+                            setStudentData({ ...studentData, cpf: onlyDigits(e.target.value) })
+                          }
+                          placeholder="000.000.000-00"
+                          className="h-11"
+                          inputMode="numeric"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2 xl:col-span-3 space-y-2">
+                        <Label className="text-sm font-medium">
+                          EndereÃ§o do aluno <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          value={studentData.address}
+                          onChange={(e) =>
+                            setStudentData({ ...studentData, address: e.target.value })
+                          }
+                          placeholder="Rua, nÃºmero, bairro, cidade"
+                          className="h-11"
+                        />
+                      </div>
+
                       <div className="md:col-span-2 xl:col-span-3 space-y-2">
                         <Label className="text-sm font-medium">Escola de origem</Label>
                         <Input
@@ -367,8 +418,8 @@ export default function NewStudentModal({
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">CPF</Label>
                         <Input
-                          value={guardian1.cpf}
-                          onChange={(e) => setGuardian1({ ...guardian1, cpf: e.target.value })}
+                          value={formatCPF(guardian1.cpf)}
+                          onChange={(e) => setGuardian1({ ...guardian1, cpf: onlyDigits(e.target.value) })}
                           className="h-11"
                           placeholder="000.000.000-00"
                           inputMode="numeric"
@@ -401,8 +452,8 @@ export default function NewStudentModal({
                           Telefone (WhatsApp) <span className="text-destructive">*</span>
                         </Label>
                         <Input
-                          value={guardian1.phone}
-                          onChange={(e) => setGuardian1({ ...guardian1, phone: e.target.value })}
+                          value={formatPhone(guardian1.phone)}
+                          onChange={(e) => setGuardian1({ ...guardian1, phone: onlyDigits(e.target.value) })}
                           className="h-11"
                           placeholder="(31) 9xxxx-xxxx"
                           inputMode="tel"
@@ -455,8 +506,8 @@ export default function NewStudentModal({
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">CPF</Label>
                           <Input
-                            value={guardian2.cpf}
-                            onChange={(e) => setGuardian2({ ...guardian2, cpf: e.target.value })}
+                            value={formatCPF(guardian2.cpf)}
+                            onChange={(e) => setGuardian2({ ...guardian2, cpf: onlyDigits(e.target.value) })}
                             className="h-11"
                             placeholder="000.000.000-00"
                             inputMode="numeric"
@@ -485,8 +536,8 @@ export default function NewStudentModal({
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">Telefone (WhatsApp)</Label>
                           <Input
-                            value={guardian2.phone}
-                            onChange={(e) => setGuardian2({ ...guardian2, phone: e.target.value })}
+                            value={formatPhone(guardian2.phone)}
+                            onChange={(e) => setGuardian2({ ...guardian2, phone: onlyDigits(e.target.value) })}
                             className="h-11"
                             placeholder="(31) 9xxxx-xxxx"
                             inputMode="tel"

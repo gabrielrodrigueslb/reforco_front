@@ -113,15 +113,16 @@
 
   /* --- SIDEBAR (Barra Lateral) --- */
   /* Mantendo clara como no light mode padrão */
-  --sidebar: #f8fafc; 
+  --sidebar: #0f172a; 
   --sidebar-foreground: #0f172a; 
   /* Item selecionado na sidebar vira o Azul da marca */
   --sidebar-primary: #223590; 
   --sidebar-primary-foreground: #ffffff; 
   --sidebar-accent: #e2e8f0; 
   --sidebar-accent-foreground: #0f172a; 
-  --sidebar-border: #e2e8f0; 
+  --sidebar-border: #212d4a; 
   --sidebar-ring: #223590;
+  --sidebar-glow: rgba(76, 95, 209, 0.45);
 }
 
 /* .dark {

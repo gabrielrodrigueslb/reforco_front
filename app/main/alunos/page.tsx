@@ -1,6 +1,6 @@
-'use client'
+﻿'use client'
 
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
@@ -60,6 +60,7 @@ import {
 
 import ImportStudentsModal from '@/components/alunos/ImportStudentsModal'
 import NewStudentModal from '@/components/alunos/NewStudentModal'
+import { StudentsService, StudentPayload, StudentResponse } from '@/services/students.service'
 
 type Guardian = {
   is_primary: boolean
@@ -84,6 +85,8 @@ type Student = {
   difficulty_subjects: string[]
 
   origin_school?: string
+  cpf: string
+  address: string
 
   allergies?: string
   blood_type?: string
@@ -98,6 +101,42 @@ type Student = {
   created_at?: string
 }
 
+type StudentData = {
+  full_name: string
+  birth_date: string
+  grade: string
+  shift: string
+  origin_school: string
+  cpf: string
+  address: string
+  status: 'Ativo' | 'Inativo'
+
+  allergies: string
+  blood_type: string
+  medical_reports: string
+  medications: string
+  behavior_notes: string
+
+  difficulty_subjects: string[]
+  difficulty_reaction: string
+  previous_tutoring: null | boolean
+
+  performance_indicator: string
+}
+
+type ImportedStudent = {
+  id: string
+  full_name: string
+  birth_date?: string
+  grade?: string
+  shift?: string
+  origin_school?: string
+  status: 'Ativo' | 'Inativo'
+  performance_indicator: string
+  difficulty_subjects: string[]
+  created_at?: string
+}
+
 type Filters = {
   search: string
   grade: string
@@ -108,63 +147,21 @@ type Filters = {
 
 const createPageUrl = (path: string) => `/main/alunos/${path}`
 
-// Valor sentinela para opção "Todas/Todos" (evita value="")
 const ALL = '__all__'
-
-const MOCK_STUDENTS_DATA: Student[] = [
-  {
-    id: '1',
-    full_name: 'Ana Júlia Souza',
-    foto_aluno: '/aluna.jpg',
-    birth_date: '2015-05-10',
-    grade: '4º Ano',
-    shift: 'Manhã',
-    status: 'Ativo',
-    performance_indicator: 'Melhorando',
-    difficulty_subjects: ['Matemática'],
-  },
-  {
-    id: '2',
-    full_name: 'Carlos Eduardo Lima',
-    foto_aluno: '/aluno.jpg',
-    birth_date: '2014-08-20',
-    grade: '5º Ano',
-    shift: 'Tarde',
-    status: 'Ativo',
-    performance_indicator: 'Atenção',
-    difficulty_subjects: ['Português', 'História'],
-  },
-  {
-    id: '3',
-    full_name: 'Pedro Henrique',
-    foto_aluno: '/aluno2.jpg',
-    birth_date: '2016-02-15',
-    grade: '3º Ano',
-    shift: 'Manhã',
-    status: 'Inativo',
-    performance_indicator: 'Não avaliado',
-    difficulty_subjects: [],
-  },
-]
 
 const grades = [
   '1º Ano','2º Ano','3º Ano','4º Ano','5º Ano','6º Ano','7º Ano','8º Ano','9º Ano','1º EM','2º EM','3º EM',
 ]
 const shifts = ['Manhã', 'Tarde']
-const relationships = ['Pai','Mãe','Avô','Avó','Tio(a)','Irmão(ã)','Responsável Legal','Outro']
+const relationships = ['Pai','Mãe','Avó','Avô','Tio(a)','Irmão(ã)','Responsável Legal','Outro']
 const bloodTypes = ['A+','A-','B+','B-','AB+','AB-','O+','O-','Não informado']
-const subjects = ['Português','Matemática','Ciências','História','Geografia','Inglês','Artes','Ed. Física']
+const subjects = ['Português','Matemática','Ciências','História','Geografia','Inglês','Artes','Ed. Fí­sica']
 
 const performanceColors: Record<string, string> = {
   Melhorando: 'bg-emerald-100 text-emerald-700',
-  Atenção: 'bg-amber-100 text-amber-700',
+  Atencao: 'bg-amber-100 text-amber-700',
   Decaindo: 'bg-rose-100 text-rose-700',
   'Não avaliado': 'bg-slate-100 text-slate-600',
-}
-
-function safeId() {
-  // @ts-ignore
-  return (globalThis?.crypto?.randomUUID?.() as string) ?? Math.random().toString(36).slice(2, 11)
 }
 
 function calculateAge(birthDate: string) {
@@ -179,8 +176,8 @@ function calculateAge(birthDate: string) {
 }
 
 export default function Students() {
-  const [students, setStudents] = useState<Student[]>(MOCK_STUDENTS_DATA)
-  const [isLoading] = useState(false)
+  const [students, setStudents] = useState<Student[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showNewModal, setShowNewModal] = useState(false)
@@ -199,13 +196,15 @@ export default function Students() {
   const [activeTab, setActiveTab] = useState('data')
   const [hasGuardian2, setHasGuardian2] = useState(false)
 
-  const [studentData, setStudentData] = useState({
+  const [studentData, setStudentData] = useState<StudentData>({
     full_name: '',
     birth_date: '',
     grade: '',
     shift: '',
     origin_school: '',
-    status: 'Ativo' as const,
+    cpf: '',
+    address: '',
+    status: 'Ativo',
 
     allergies: '',
     blood_type: 'Não informado',
@@ -249,6 +248,8 @@ export default function Students() {
       grade: '',
       shift: '',
       origin_school: '',
+      cpf: '',
+      address: '',
       status: 'Ativo',
 
       allergies: '',
@@ -288,6 +289,22 @@ export default function Students() {
     setActiveTab('data')
   }, [])
 
+  const fetchStudents = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const data = await StudentsService.list()
+      setStudents(data as Student[])
+    } catch {
+      toast.error('Não foi possí­vel carregar alunos')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchStudents()
+  }, [fetchStudents])
+
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
       if (filters.search && !student.full_name?.toLowerCase().includes(filters.search.toLowerCase())) return false
@@ -302,9 +319,15 @@ export default function Students() {
   const handleDeleteStudent = useCallback(async () => {
     if (!deleteStudent) return
     const id = deleteStudent.id
-    setStudents((prev) => prev.filter((s) => s.id !== id))
-    toast.success('Aluno excluído com sucesso')
-    setDeleteStudent(null)
+    try {
+      await StudentsService.delete(id)
+      setStudents((prev) => prev.filter((s) => s.id !== id))
+      toast.success('Aluno excluí­do com sucesso')
+    } catch {
+      toast.error('Nío foi possível excluir o aluno')
+    } finally {
+      setDeleteStudent(null)
+    }
   }, [deleteStudent])
 
   const toggleSubject = useCallback((subject: string) => {
@@ -324,13 +347,19 @@ export default function Students() {
       return
     }
 
-    if (!guardian1.full_name || !guardian1.phone || !guardian1.relationship) {
+    if (!studentData.cpf || !studentData.address) {
+      toast.error('Preencha CPF e endereço do aluno')
+      setActiveTab('data')
+      return
+    }
+
+    if (!guardian1.full_name || !guardian1.phone || !guardian1.relationship || !guardian1.cpf) {
       toast.error('Preencha os dados do responsável principal')
       setActiveTab('guardians')
       return
     }
 
-    if (hasGuardian2 && (!guardian2.full_name || !guardian2.phone || !guardian2.relationship)) {
+    if (hasGuardian2 && (!guardian2.full_name || !guardian2.phone || !guardian2.relationship || !guardian2.cpf)) {
       toast.error('Preencha os dados do responsável 2 ou desative a opção')
       setActiveTab('guardians')
       return
@@ -338,16 +367,13 @@ export default function Students() {
 
     setIsSaving(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800))
-
-      const newStudent: Student = {
-        id: safeId(),
+      const payload: StudentPayload = {
         ...studentData,
-        created_at: new Date().toISOString(),
         guardians: hasGuardian2 ? [guardian1, guardian2] : [guardian1],
       }
 
-      setStudents((prev) => [newStudent, ...prev])
+      const newStudent = (await StudentsService.create(payload)) as StudentResponse
+      setStudents((prev) => [newStudent as Student, ...prev])
       toast.success('Aluno cadastrado com sucesso!')
       setShowNewModal(false)
       resetNewForm()
@@ -393,7 +419,7 @@ export default function Students() {
 
           <Button
             onClick={() => { resetNewForm(); setShowNewModal(true) }}
-            className="h-11 px-4 rounded-xl justify-center bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] hover:from-[var(--brand-gradient-from-hover)] hover:to-[var(--brand-gradient-to-hover)] text-white shadow-lg shadow-indigo-200"
+            className="h-11 px-4 rounded-xl justify-center bg-linear-to-r from-(--brand-gradient-from) to-(--brand-gradient-to) hover:from-(--brand-gradient-from-hover) hover:to-(--brand-gradient-to-hover) text-white shadow-lg shadow-indigo-200"
           >
             <UserPlus className="w-5 h-5 mr-2" />
             Novo Aluno
@@ -559,7 +585,7 @@ export default function Students() {
           {!hasAnyFilter && (
             <Button
               onClick={() => { resetNewForm(); setShowNewModal(true) }}
-              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] h-11 rounded-xl"
+              className="bg-linear-to-r from-(--brand-gradient-from) to-(--brand-gradient-to) h-11 rounded-xl"
             >
               <UserPlus className="w-5 h-5 mr-2" />
               Cadastrar Aluno
@@ -578,7 +604,7 @@ export default function Students() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-linear-to-br from-[var(--brand-gradient-from-light)] to-[var(--brand-gradient-to-light)] flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-200 overflow-hidden shrink-0">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-linear-to-br from-(--brand-gradient-from-light) to-(--brand-gradient-to-light) flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-200 overflow-hidden shrink-0">
                       {student.foto_aluno ? (
                         <Image
                           src={student.foto_aluno}
@@ -586,6 +612,7 @@ export default function Students() {
                           alt={student.full_name || 'Foto do aluno'}
                           width={56}
                           height={56}
+                          unoptimized
                         />
                       ) : (
                         <span>{student.full_name?.charAt(0)?.toUpperCase()}</span>
@@ -596,7 +623,7 @@ export default function Students() {
                       <h3 className="font-semibold text-slate-800 truncate">{student.full_name}</h3>
                       <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-slate-500">
                         <span className="truncate">{student.grade}</span>
-                        {age !== null && <span className="shrink-0">• {age} anos</span>}
+                        {age !== null && <span className="shrink-0">ânos {age} anos</span>}
                       </div>
                     </div>
                   </div>
@@ -681,9 +708,16 @@ export default function Students() {
                   <TableRow key={student.id} className="hover:bg-slate-50">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[var(--brand-gradient-from-light)] to-[var(--brand-gradient-to-light)] flex items-center justify-center text-white font-bold overflow-hidden">
+                        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-(--brand-gradient-from-light) to-(--brand-gradient-to-light) flex items-center justify-center text-white font-bold overflow-hidden">
                           {student.foto_aluno ? (
-                            <Image src={student.foto_aluno} className="object-cover w-full h-full" alt={student.full_name || 'Foto do aluno'} width={40} height={40} />
+                            <Image
+                              src={student.foto_aluno}
+                              className="object-cover w-full h-full"
+                              alt={student.full_name || 'Foto do aluno'}
+                              width={40}
+                              height={40}
+                              unoptimized
+                            />
                           ) : (
                             <span>{student.full_name?.charAt(0)?.toUpperCase()}</span>
                           )}
@@ -768,8 +802,30 @@ export default function Students() {
         open={showImportModal}
         onOpenChange={setShowImportModal}
         templateHref="/templates/Modelo_Importacao_Alunos.xlsx"
-        onImported={(newStudents) => {
-          setStudents((prev) => [...(newStudents as any as Student[]), ...prev])
+        onImported={(newStudents: ImportedStudent[]) => {
+          const normalized = newStudents.map((s) => ({
+            id: s.id,
+            full_name: s.full_name,
+            birth_date: s.birth_date || '',
+            grade: s.grade || '',
+            shift: s.shift || '',
+            status: s.status,
+            performance_indicator: s.performance_indicator || 'Não avaliado',
+            difficulty_subjects: s.difficulty_subjects || [],
+            origin_school: s.origin_school || '',
+            cpf: '',
+            address: '',
+            allergies: '',
+            blood_type: 'Não informado',
+            medical_reports: '',
+            medications: '',
+            behavior_notes: '',
+            difficulty_reaction: '',
+            previous_tutoring: null,
+            guardians: [],
+            created_at: s.created_at,
+          }))
+          setStudents((prev) => [...normalized, ...prev])
           toast.success('Alunos importados com sucesso!')
         }}
       />
@@ -794,3 +850,4 @@ export default function Students() {
     </div>
   )
 }
+

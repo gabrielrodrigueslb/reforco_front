@@ -15,6 +15,8 @@ export interface Student {
   shift?: string;
   status: StudentStatus;
   origin_school?: string;
+  cpf?: string;
+  address?: string;
   blood_type?: string;
   allergies?: string;
   medications?: string;

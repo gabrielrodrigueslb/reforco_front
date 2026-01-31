@@ -1,32 +1,48 @@
-'use client'
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Check, X, Clock, Save, Loader2, History, ChevronLeft, ChevronRight, Eye, MessageSquare } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
+import {
+  Calendar,
+  Users,
+  Check,
+  X,
+  Clock,
+  Save,
+  Loader2,
+  History,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  MessageSquare,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import PageTitle from "@/components/page-title";
+} from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import PageTitle from '@/components/page-title';
+import { StudentsService, StudentResponse } from '@/services/students.service';
+import { AttendanceService } from '@/services/attendance.service';
+import { ClassesService } from '@/services/classes.service';
 
-type Shift = 'Manh?' | 'Tarde';
+type Shift = string;
 type AttendanceStatus = 'Presente' | 'Ausente' | 'Justificado';
 
 type ClassItem = {
@@ -64,38 +80,18 @@ type AttendanceCall = {
   records: AttendanceRecord[];
 };
 
-
 // --- DADOS MOCKADOS ---
-const MOCK_CLASSES: ClassItem[] = [
-  { id: 'c1', name: 'Turma A - 4º Ano', shift: 'Manhã' },
-  { id: 'c2', name: 'Turma B - 5º Ano', shift: 'Tarde' },
-];
-
-const MOCK_STUDENTS: Student[] = [
-  { id: '1', full_name: 'Ana Júlia Souza', status: 'Ativo', shift: 'Manhã', class_id: 'c1', grade: '4º Ano' },
-  { id: '2', full_name: 'Bruno Lima', status: 'Ativo', shift: 'Manhã', class_id: 'c1', grade: '4º Ano' },
-  { id: '3', full_name: 'Carlos Eduardo', status: 'Ativo', shift: 'Tarde', class_id: 'c2', grade: '5º Ano' },
-  { id: '4', full_name: 'Daniela Alves', status: 'Ativo', shift: 'Tarde', class_id: 'c2', grade: '5º Ano' },
-];
-
 // Dados iniciais para popular o histórico
-const INITIAL_HISTORY: AttendanceRecord[] = [
-  { id: 'h1', student_id: '1', date: '2023-10-25', shift: 'Manhã', status: 'Presente', created_date: '2023-10-25T07:30:00', created_by: 'Prof. Silva' },
-  { id: 'h2', student_id: '2', date: '2023-10-25', shift: 'Manhã', status: 'Ausente', created_date: '2023-10-25T07:30:00', created_by: 'Prof. Silva' },
-  { id: 'h3', student_id: '3', date: '2023-10-24', shift: 'Tarde', status: 'Presente', created_date: '2023-10-24T13:15:00', created_by: 'Prof. Santos' },
-  { id: 'h4', student_id: '4', date: '2023-10-24', shift: 'Tarde', status: 'Justificado', justification: 'Consulta médica', created_date: '2023-10-24T13:15:00', created_by: 'Prof. Santos' },
-];
-
 // --- UTILITÁRIOS DE DATA (Substituindo date-fns) ---
 const formatDateISO = (date: Date) => date.toISOString().split('T')[0];
 
 const formatDisplayDate = (dateStr: string) => {
   if (!dateStr) return '';
   // Adiciona T12:00 para evitar problemas de timezone ao converter string YYYY-MM-DD
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR', { 
-    weekday: 'long', 
-    day: 'numeric', 
-    month: 'long' 
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
   });
 };
 
@@ -105,6 +101,17 @@ const formatShortDate = (date: Date) => {
 
 const formatMonthLabel = (date: Date) => {
   return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+};
+
+const shiftKey = (value?: string) => {
+  if (!value) return '';
+  const normalized = value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  if (normalized.startsWith('manh')) return 'manha';
+  if (normalized.startsWith('tard')) return 'tarde';
+  return normalized;
 };
 
 const getStartOfWeek = (date: Date) => {
@@ -138,58 +145,109 @@ const getMonthGrid = (date: Date) => {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startDay = (firstDay.getDay() + 6) % 7; // Monday = 0
   const padding = Array.from({ length: startDay });
-  const days = Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1));
+  const days = Array.from(
+    { length: daysInMonth },
+    (_, i) => new Date(year, month, i + 1),
+  );
   return { padding, days };
 };
 
 export default function Attendance() {
   const [activeTab, setActiveTab] = useState('today');
-  
+
   // Estado Hoje
   const [selectedDate, setSelectedDate] = useState(formatDateISO(new Date()));
   const [selectedShift, setSelectedShift] = useState('Manhã');
   const [selectedClass, setSelectedClass] = useState('all');
-  const [attendanceMap, setAttendanceMap] = useState<Record<string, string | null>>({});
-  const [justifications, setJustifications] = useState<Record<string, string>>({});
-  const [expandedJustifications, setExpandedJustifications] = useState<Record<string, boolean>>({});
+  const [attendanceMap, setAttendanceMap] = useState<
+    Record<string, string | null>
+  >({});
+  const [justifications, setJustifications] = useState<Record<string, string>>(
+    {},
+  );
+  const [expandedJustifications, setExpandedJustifications] = useState<
+    Record<string, boolean>
+  >({});
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedCallDetails, setSelectedCallDetails] = useState<AttendanceCall | null>(null);
+  const [selectedCallDetails, setSelectedCallDetails] =
+    useState<AttendanceCall | null>(null);
   const [showConfirmSave, setShowConfirmSave] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
 
   // Estado Histórico e Dados
   const [historyPeriod, setHistoryPeriod] = useState('week');
-  const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date()));
-  const [currentMonthStart, setCurrentMonthStart] = useState(getStartOfMonth(new Date()));
+  const [currentWeekStart, setCurrentWeekStart] = useState(
+    getStartOfWeek(new Date()),
+  );
+  const [currentMonthStart, setCurrentMonthStart] = useState(
+    getStartOfMonth(new Date()),
+  );
   const [monthSelectedDate, setMonthSelectedDate] = useState('');
-  
-  // Banco de dados local simulado
-  const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>(INITIAL_HISTORY);
+
+  // Dados vindos da API
+  const [attendanceHistory, setAttendanceHistory] = useState<
+    AttendanceRecord[]
+  >([]);
+  const [todayRecords, setTodayRecords] = useState<AttendanceRecord[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // Carregar dados iniciais
+  // Carregar alunos
   useEffect(() => {
     setLoadingData(true);
-    setTimeout(() => {
-      setStudents(MOCK_STUDENTS);
-      setClasses(MOCK_CLASSES);
-      setLoadingData(false);
-    }, 800);
+    Promise.all([StudentsService.list(), ClassesService.list()])
+      .then(([studentsData, classesData]) => {
+        const mapped = (studentsData || []).map((s: StudentResponse) => ({
+          id: s.id,
+          full_name: s.full_name,
+          status: s.status,
+          shift: (s.shift || 'Manh?') as Shift,
+          class_id: s.class_id || '',
+          grade: s.grade || '',
+        }));
+        setStudents(mapped);
+        setClasses(
+          (classesData || []).map((c) => ({
+            id: String(c.id),
+            name: c.name,
+            shift: c.shift,
+          })),
+        );
+      })
+      .catch(() => {
+        toast.error('Não foi possÃ­vel carregar alunos e turmas');
+      })
+      .finally(() => {
+        setLoadingData(false);
+      });
   }, []);
 
-  // Filtrar chamada existente para o dia selecionado (Aba Hoje)
+  // Carregar chamada do dia selecionado
   useEffect(() => {
-    const existing = attendanceHistory.filter(
-      a => a.date === selectedDate && a.shift === selectedShift
-    );
+    const loadToday = async () => {
+      try {
+        const data = await AttendanceService.listByDateTurno({
+          date: selectedDate,
+          turno: selectedShift,
+          turmaId: selectedClass !== 'all' ? selectedClass : null,
+        });
+        setTodayRecords(data as AttendanceRecord[]);
+      } catch {
+        toast.error('Não foi possÃ­vel carregar a chamada');
+        setTodayRecords([]);
+      }
+    };
+    loadToday();
+  }, [selectedDate, selectedShift, selectedClass]);
 
+  // Preencher mapa da chamada do dia
+  useEffect(() => {
     const map: Record<string, string> = {};
     const justifMap: Record<string, string> = {};
     const expandMap: Record<string, boolean> = {};
 
-    existing.forEach(a => {
+    todayRecords.forEach((a) => {
       map[a.student_id] = a.status;
       if (a.justification) {
         justifMap[a.student_id] = a.justification;
@@ -200,19 +258,61 @@ export default function Attendance() {
     setAttendanceMap(map);
     setJustifications(justifMap);
     setExpandedJustifications(expandMap);
-  }, [selectedDate, selectedShift, attendanceHistory]);
+  }, [todayRecords]);
+
+  // Carregar histÃ³rico
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        let from = '';
+        let to = '';
+        if (historyPeriod === 'today') {
+          const today = formatDateISO(new Date());
+          from = today;
+          to = today;
+        } else if (historyPeriod === 'week') {
+          from = formatDateISO(currentWeekStart);
+          to = formatDateISO(addDays(currentWeekStart, 6));
+        } else {
+          const start = getStartOfMonth(currentMonthStart);
+          const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+          from = formatDateISO(start);
+          to = formatDateISO(end);
+        }
+
+        const data = await AttendanceService.history({
+          from,
+          to,
+          turno: selectedShift,
+          turmaId: selectedClass !== 'all' ? selectedClass : null,
+        });
+        setAttendanceHistory(data as AttendanceRecord[]);
+      } catch {
+        toast.error('Não foi possÃ­vel carregar o histÃ³rico');
+        setAttendanceHistory([]);
+      }
+    };
+
+    loadHistory();
+  }, [
+    historyPeriod,
+    currentWeekStart,
+    currentMonthStart,
+    selectedShift,
+    selectedClass,
+  ]);
 
   // Filtragem de Alunos
   const filteredStudents = students
-    .filter(s => s.status === 'Ativo')
-    .filter(s => s.shift === selectedShift)
-    .filter(s => selectedClass === 'all' || s.class_id === selectedClass)
+    .filter((s) => s.status === 'Ativo')
+    .filter((s) => shiftKey(s.shift) === shiftKey(selectedShift))
+    .filter((s) => selectedClass === 'all' || s.class_id === selectedClass)
     .sort((a, b) => a.full_name.localeCompare(b.full_name));
 
   // Lógica de Histórico
-  const filteredHistory = attendanceHistory.filter(a => {
-    if (a.shift !== selectedShift) return false;
-    
+  const filteredHistory = attendanceHistory.filter((a) => {
+    if (shiftKey(a.shift) !== shiftKey(selectedShift)) return false;
+
     const recordDate = new Date(a.date + 'T12:00:00');
     const todayStr = formatDateISO(new Date());
 
@@ -222,13 +322,14 @@ export default function Attendance() {
       const start = currentWeekStart;
       const end = addDays(currentWeekStart, 6);
       // Ajustando horas para comparação correta
-      start.setHours(0,0,0,0);
-      end.setHours(23,59,59,999);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
       return recordDate >= start && recordDate <= end;
     } else {
       const month = currentMonthStart.getMonth();
       const year = currentMonthStart.getFullYear();
-      const sameMonth = recordDate.getMonth() === month && recordDate.getFullYear() === year;
+      const sameMonth =
+        recordDate.getMonth() === month && recordDate.getFullYear() === year;
       if (!sameMonth) return false;
       if (!monthSelectedDate) return true;
       return a.date === monthSelectedDate;
@@ -236,63 +337,75 @@ export default function Attendance() {
   });
 
   const toggleAttendance = (studentId: string, status: AttendanceStatus) => {
-    setAttendanceMap(prev => ({
+    setAttendanceMap((prev) => ({
       ...prev,
-      [studentId]: prev[studentId] === status ? null : status
+      [studentId]: prev[studentId] === status ? null : status,
     }));
-    
+
     if (status === 'Justificado') {
-      setExpandedJustifications(prev => ({
+      setExpandedJustifications((prev) => ({
         ...prev,
-        [studentId]: true
+        [studentId]: true,
       }));
     } else {
-      setExpandedJustifications(prev => ({
+      setExpandedJustifications((prev) => ({
         ...prev,
-        [studentId]: false
+        [studentId]: false,
       }));
-      setJustifications(prev => ({
+      setJustifications((prev) => ({
         ...prev,
-        [studentId]: ''
+        [studentId]: '',
       }));
     }
   };
 
   const handleSave = async () => {
     setIsSaving(true);
-    
+
     try {
-      // Simula delay de rede
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Remove registros antigos deste dia/turno para substituir pelos novos
-      const otherRecords = attendanceHistory.filter(
-        a => !(a.date === selectedDate && a.shift === selectedShift)
-      );
-
-      const newRecords: AttendanceRecord[] = [];
-      const nowISO = new Date().toISOString();
-
-      for (const studentId of Object.keys(attendanceMap)) {
-        const status = attendanceMap[studentId];
-        if (!status) continue;
-
-        const justification = status === 'Justificado' ? justifications[studentId] : undefined;
-
-        newRecords.push({
-          id: Math.random().toString(36).substr(2, 9),
+      const records = Object.keys(attendanceMap)
+        .map((studentId) => ({
           student_id: studentId,
-          date: selectedDate,
-          shift: selectedShift,
-          status,
-          justification,
-          class_id: selectedClass !== 'all' ? selectedClass : undefined,
-          created_date: nowISO,
-          created_by: 'Você' // Mock user
-        });
+          status: attendanceMap[studentId] as AttendanceStatus,
+          justification:
+            attendanceMap[studentId] === 'Justificado'
+              ? justifications[studentId]
+              : undefined,
+        }))
+        .filter((r) => r.status);
+
+      const saved = await AttendanceService.saveCall({
+        date: selectedDate,
+        turno: selectedShift,
+        turmaId: selectedClass !== 'all' ? selectedClass : null,
+        records,
+      });
+
+      setTodayRecords(saved as AttendanceRecord[]);
+
+      let from = '';
+      let to = '';
+      if (historyPeriod === 'today') {
+        const today = formatDateISO(new Date());
+        from = today;
+        to = today;
+      } else if (historyPeriod === 'week') {
+        from = formatDateISO(currentWeekStart);
+        to = formatDateISO(addDays(currentWeekStart, 6));
+      } else {
+        const start = getStartOfMonth(currentMonthStart);
+        const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+        from = formatDateISO(start);
+        to = formatDateISO(end);
       }
 
-      setAttendanceHistory([...otherRecords, ...newRecords]);
+      const history = await AttendanceService.history({
+        from,
+        to,
+        turno: selectedShift,
+        turmaId: selectedClass !== 'all' ? selectedClass : null,
+      });
+      setAttendanceHistory(history as AttendanceRecord[]);
       toast.success('Chamada salva com sucesso!');
       setShowSaved(true);
     } catch (error) {
@@ -304,11 +417,17 @@ export default function Attendance() {
   };
 
   const markedCount = Object.values(attendanceMap).filter(Boolean).length;
-  const presentCount = Object.values(attendanceMap).filter(s => s === 'Presente').length;
-  const absentCount = Object.values(attendanceMap).filter(s => s === 'Ausente').length;
+  const presentCount = Object.values(attendanceMap).filter(
+    (s) => s === 'Presente',
+  ).length;
+  const absentCount = Object.values(attendanceMap).filter(
+    (s) => s === 'Ausente',
+  ).length;
 
   // Agrupar histórico por Data + Turno
-  const groupedAttendance = filteredHistory.reduce<Record<string, AttendanceCall>>((acc, record) => {
+  const groupedAttendance = filteredHistory.reduce<
+    Record<string, AttendanceCall>
+  >((acc, record) => {
     const key = `${record.date}_${record.shift}`;
     if (!acc[key]) {
       acc[key] = {
@@ -316,23 +435,23 @@ export default function Attendance() {
         shift: record.shift,
         created_by: record.created_by,
         created_date: record.created_date,
-        records: []
+        records: [],
       };
     }
     acc[key].records.push(record);
     return acc;
   }, {});
 
-  const attendanceCalls = Object.values(groupedAttendance).sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
+  const attendanceCalls = Object.values(groupedAttendance).sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 
   const navigateWeek = (direction: number) => {
-    setCurrentWeekStart(prev => addDays(prev, direction * 7));
+    setCurrentWeekStart((prev) => addDays(prev, direction * 7));
   };
 
   const navigateMonth = (direction: number) => {
-    setCurrentMonthStart(prev => addMonths(prev, direction));
+    setCurrentMonthStart((prev) => addMonths(prev, direction));
     setMonthSelectedDate('');
   };
 
@@ -402,7 +521,7 @@ export default function Attendance() {
                   className="!h-12 rounded-xl w-full"
                 />
               </div>
-              
+
               <div>
                 <Label className="text-slate-700 font-medium flex items-center gap-2 mb-2">
                   <Clock className="w-4 h-4" /> Turno
@@ -428,9 +547,15 @@ export default function Attendance() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todas as turmas</SelectItem>
-                    {classes.filter(c => c.shift === selectedShift).map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
+                    {classes
+                      .filter(
+                        (c) => shiftKey(c.shift) === shiftKey(selectedShift),
+                      )
+                      .map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -440,11 +565,15 @@ export default function Attendance() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
-              <p className="text-2xl font-bold text-slate-800">{filteredStudents.length}</p>
+              <p className="text-2xl font-bold text-slate-800">
+                {filteredStudents.length}
+              </p>
               <p className="text-sm text-slate-500">Alunos</p>
             </div>
             <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 text-center">
-              <p className="text-2xl font-bold text-emerald-600">{presentCount}</p>
+              <p className="text-2xl font-bold text-emerald-600">
+                {presentCount}
+              </p>
               <p className="text-sm text-emerald-600">Presentes</p>
             </div>
             <div className="bg-rose-50 rounded-2xl p-4 border border-rose-100 text-center">
@@ -463,14 +592,16 @@ export default function Attendance() {
 
             {loadingData ? (
               <div className="p-4 space-y-4">
-                {[1, 2, 3, 4, 5].map(i => (
+                {[1, 2, 3, 4, 5].map((i) => (
                   <Skeleton key={i} className="h-16 rounded-xl" />
                 ))}
               </div>
             ) : filteredStudents.length === 0 ? (
               <div className="p-8 text-center">
                 <Users className="w-12 h-12 mx-auto text-slate-300 mb-4" />
-                <p className="text-slate-500">Nenhum aluno encontrado para este turno</p>
+                <p className="text-slate-500">
+                  Nenhum aluno encontrado para este turno
+                </p>
               </div>
             ) : (
               <div className="divide-y divide-slate-100">
@@ -478,7 +609,7 @@ export default function Attendance() {
                   const status = attendanceMap[student.id];
                   const isJustified = status === 'Justificado';
                   const isExpanded = expandedJustifications[student.id];
-                  
+
                   return (
                     <div key={student.id}>
                       <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
@@ -487,41 +618,51 @@ export default function Attendance() {
                             {index + 1}
                           </span>
                           <div>
-                            <p className="font-medium text-slate-800">{student.full_name}</p>
-                            <p className="text-sm text-slate-500">{student.grade}</p>
+                            <p className="font-medium text-slate-800">
+                              {student.full_name}
+                            </p>
+                            <p className="text-sm text-slate-500">
+                              {student.grade}
+                            </p>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => toggleAttendance(student.id, 'Presente')}
+                            onClick={() =>
+                              toggleAttendance(student.id, 'Presente')
+                            }
                             className={cn(
-                              "w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center transition-all",
+                              'w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center transition-all',
                               status === 'Presente'
-                                ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200"
-                                : "bg-slate-100 text-slate-400 hover:bg-emerald-100 hover:text-emerald-500"
+                                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200'
+                                : 'bg-slate-100 text-slate-400 hover:bg-emerald-100 hover:text-emerald-500',
                             )}
                           >
                             <Check className="w-6 h-6" />
                           </button>
                           <button
-                            onClick={() => toggleAttendance(student.id, 'Ausente')}
+                            onClick={() =>
+                              toggleAttendance(student.id, 'Ausente')
+                            }
                             className={cn(
-                              "w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center transition-all",
+                              'w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center transition-all',
                               status === 'Ausente'
-                                ? "bg-rose-500 text-white shadow-lg shadow-rose-200"
-                                : "bg-slate-100 text-slate-400 hover:bg-rose-100 hover:text-rose-500"
+                                ? 'bg-rose-500 text-white shadow-lg shadow-rose-200'
+                                : 'bg-slate-100 text-slate-400 hover:bg-rose-100 hover:text-rose-500',
                             )}
                           >
                             <X className="w-6 h-6" />
                           </button>
                           <button
-                            onClick={() => toggleAttendance(student.id, 'Justificado')}
+                            onClick={() =>
+                              toggleAttendance(student.id, 'Justificado')
+                            }
                             className={cn(
-                              "w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center transition-all",
+                              'w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center transition-all',
                               status === 'Justificado'
-                                ? "bg-amber-500 text-white shadow-lg shadow-amber-200"
-                                : "bg-slate-100 text-slate-400 hover:bg-amber-100 hover:text-amber-500"
+                                ? 'bg-amber-500 text-white shadow-lg shadow-amber-200'
+                                : 'bg-slate-100 text-slate-400 hover:bg-amber-100 hover:text-amber-500',
                             )}
                           >
                             <Clock className="w-5 h-5" />
@@ -531,10 +672,17 @@ export default function Attendance() {
 
                       {isJustified && isExpanded && (
                         <div className="px-4 pb-4 bg-amber-50 border-t border-amber-100">
-                          <Label className="text-sm text-amber-700 mb-2 block mt-3">Justificativa da falta:</Label>
+                          <Label className="text-sm text-amber-700 mb-2 block mt-3">
+                            Justificativa da falta:
+                          </Label>
                           <Textarea
                             value={justifications[student.id] || ''}
-                            onChange={(e) => setJustifications(prev => ({ ...prev, [student.id]: e.target.value }))}
+                            onChange={(e) =>
+                              setJustifications((prev) => ({
+                                ...prev,
+                                [student.id]: e.target.value,
+                              }))
+                            }
                             placeholder="Ex: Consulta médica, problema familiar..."
                             className="bg-white border-amber-200 focus:border-amber-400"
                             rows={2}
@@ -560,21 +708,30 @@ export default function Attendance() {
                   <Button
                     variant={historyPeriod === 'today' ? 'default' : 'outline'}
                     onClick={() => setHistoryPeriod('today')}
-                    className={cn('w-full sm:w-auto', historyPeriod === 'today' ? 'bg-indigo-500' : '')}
+                    className={cn(
+                      'w-full sm:w-auto',
+                      historyPeriod === 'today' ? 'bg-indigo-500' : '',
+                    )}
                   >
                     Hoje
                   </Button>
                   <Button
                     variant={historyPeriod === 'week' ? 'default' : 'outline'}
                     onClick={() => setHistoryPeriod('week')}
-                    className={cn('w-full sm:w-auto', historyPeriod === 'week' ? 'bg-indigo-500' : '')}
+                    className={cn(
+                      'w-full sm:w-auto',
+                      historyPeriod === 'week' ? 'bg-indigo-500' : '',
+                    )}
                   >
                     Semana
                   </Button>
                   <Button
                     variant={historyPeriod === 'month' ? 'default' : 'outline'}
                     onClick={() => setHistoryPeriod('month')}
-                    className={cn('w-full sm:w-auto', historyPeriod === 'month' ? 'bg-indigo-500' : '')}
+                    className={cn(
+                      'w-full sm:w-auto',
+                      historyPeriod === 'month' ? 'bg-indigo-500' : '',
+                    )}
                   >
                     Mês
                   </Button>
@@ -583,13 +740,22 @@ export default function Attendance() {
 
               {historyPeriod === 'week' && (
                 <div className="flex items-center justify-between gap-2 w-full sm:w-auto">
-                  <Button variant="outline" size="icon" onClick={() => navigateWeek(-1)}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigateWeek(-1)}
+                  >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
                   <span className="text-sm font-medium px-2 sm:px-4 text-center flex-1">
-                    {formatShortDate(currentWeekStart)} - {formatShortDate(addDays(currentWeekStart, 6))}
+                    {formatShortDate(currentWeekStart)} -{' '}
+                    {formatShortDate(addDays(currentWeekStart, 6))}
                   </span>
-                  <Button variant="outline" size="icon" onClick={() => navigateWeek(1)}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigateWeek(1)}
+                  >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
@@ -597,13 +763,21 @@ export default function Attendance() {
 
               {historyPeriod === 'month' && (
                 <div className="flex items-center justify-between gap-2 w-full sm:w-auto">
-                  <Button variant="outline" size="icon" onClick={() => navigateMonth(-1)}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigateMonth(-1)}
+                  >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
                   <span className="text-sm font-medium px-2 sm:px-4 text-center flex-1 capitalize">
                     {formatMonthLabel(currentMonthStart)}
                   </span>
-                  <Button variant="outline" size="icon" onClick={() => navigateMonth(1)}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigateMonth(1)}
+                  >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
@@ -625,7 +799,9 @@ export default function Attendance() {
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 sm:p-6">
               <div className="grid grid-cols-7 gap-1 text-xs sm:text-sm text-slate-500 mb-2">
                 {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'].map((d) => (
-                  <div key={d} className="text-center font-medium py-1">{d}</div>
+                  <div key={d} className="text-center font-medium py-1">
+                    {d}
+                  </div>
                 ))}
               </div>
 
@@ -637,7 +813,9 @@ export default function Attendance() {
                 {getMonthGrid(currentMonthStart).days.map((day) => {
                   const dayStr = formatDateISO(day);
                   const hasRecords = attendanceHistory.some(
-                    (a) => a.shift === selectedShift && a.date === dayStr
+                    (a) =>
+                      shiftKey(a.shift) === shiftKey(selectedShift) &&
+                      a.date === dayStr,
                   );
                   const isSelected = monthSelectedDate === dayStr;
 
@@ -651,7 +829,9 @@ export default function Attendance() {
                       }}
                       className={cn(
                         'h-9 sm:h-11 md:h-12 rounded-lg border border-transparent flex items-center justify-center text-sm transition-all',
-                        isSelected ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'hover:bg-slate-50'
+                        isSelected
+                          ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                          : 'hover:bg-slate-50',
                       )}
                     >
                       <span className="relative">
@@ -672,16 +852,24 @@ export default function Attendance() {
             {attendanceCalls.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
                 <History className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                <p className="text-slate-500">Nenhuma chamada registrada neste período</p>
+                <p className="text-slate-500">
+                  Nenhuma chamada registrada neste período
+                </p>
               </div>
             ) : (
               attendanceCalls.map((call, idx) => {
-                const present = call.records.filter((r) => r.status === 'Presente').length;
-                const absent = call.records.filter((r) => r.status === 'Ausente').length;
-                const justified = call.records.filter((r) => r.status === 'Justificado').length;
+                const present = call.records.filter(
+                  (r) => r.status === 'Presente',
+                ).length;
+                const absent = call.records.filter(
+                  (r) => r.status === 'Ausente',
+                ).length;
+                const justified = call.records.filter(
+                  (r) => r.status === 'Justificado',
+                ).length;
 
                 return (
-                  <div 
+                  <div
                     key={idx}
                     className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all p-6"
                   >
@@ -701,7 +889,11 @@ export default function Attendance() {
                             </span>
                             {call.created_date && (
                               <span>
-                                Registrado às {new Date(call.created_date).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                                Registrado às{' '}
+                                {new Date(call.created_date).toLocaleTimeString(
+                                  'pt-BR',
+                                  { hour: '2-digit', minute: '2-digit' },
+                                )}
                               </span>
                             )}
                             {call.created_by && (
@@ -710,7 +902,7 @@ export default function Attendance() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <Button
                         variant="outline"
                         size="sm"
@@ -724,19 +916,27 @@ export default function Attendance() {
 
                     <div className="grid grid-cols-4 gap-4">
                       <div className="text-center p-3 bg-slate-50 rounded-xl">
-                        <p className="text-2xl font-bold text-slate-800">{call.records.length}</p>
+                        <p className="text-2xl font-bold text-slate-800">
+                          {call.records.length}
+                        </p>
                         <p className="text-xs text-slate-500">Total</p>
                       </div>
                       <div className="text-center p-3 bg-emerald-50 rounded-xl">
-                        <p className="text-2xl font-bold text-emerald-600">{present}</p>
+                        <p className="text-2xl font-bold text-emerald-600">
+                          {present}
+                        </p>
                         <p className="text-xs text-emerald-600">Presentes</p>
                       </div>
                       <div className="text-center p-3 bg-rose-50 rounded-xl">
-                        <p className="text-2xl font-bold text-rose-600">{absent}</p>
+                        <p className="text-2xl font-bold text-rose-600">
+                          {absent}
+                        </p>
                         <p className="text-xs text-rose-600">Ausentes</p>
                       </div>
                       <div className="text-center p-3 bg-amber-50 rounded-xl">
-                        <p className="text-2xl font-bold text-amber-600">{justified}</p>
+                        <p className="text-2xl font-bold text-amber-600">
+                          {justified}
+                        </p>
                         <p className="text-xs text-amber-600">Justificadas</p>
                       </div>
                     </div>
@@ -749,11 +949,16 @@ export default function Attendance() {
       </Tabs>
 
       {/* Call Details Modal */}
-      <Dialog open={!!selectedCallDetails} onOpenChange={() => setSelectedCallDetails(null)}>
+      <Dialog
+        open={!!selectedCallDetails}
+        onOpenChange={() => setSelectedCallDetails(null)}
+      >
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="capitalize">
-              Detalhes da Chamada - {selectedCallDetails && formatDisplayDate(selectedCallDetails.date)}
+              Detalhes da Chamada -{' '}
+              {selectedCallDetails &&
+                formatDisplayDate(selectedCallDetails.date)}
             </DialogTitle>
           </DialogHeader>
 
@@ -765,13 +970,23 @@ export default function Attendance() {
                 <div className="flex-1">
                   <p className="text-sm text-slate-500">Turno e Horário</p>
                   <p className="font-medium text-slate-800">
-                    {selectedCallDetails.shift} - Registrado às {new Date(selectedCallDetails.created_date).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                    {selectedCallDetails.shift} - Registrado às{' '}
+                    {selectedCallDetails.created_date
+                      ? new Date(
+                          selectedCallDetails.created_date,
+                        ).toLocaleTimeString('pt-BR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : '--'}
                   </p>
                 </div>
                 {selectedCallDetails.created_by && (
                   <div>
                     <p className="text-sm text-slate-500">Realizado por</p>
-                    <p className="font-medium text-slate-800">{selectedCallDetails.created_by}</p>
+                    <p className="font-medium text-slate-800">
+                      {selectedCallDetails.created_by}
+                    </p>
                   </div>
                 )}
               </div>
@@ -780,19 +995,31 @@ export default function Attendance() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="p-4 bg-emerald-50 rounded-xl text-center">
                   <p className="text-3xl font-bold text-emerald-600">
-                            {selectedCallDetails.records.filter(r => r.status === 'Presente').length}
+                    {
+                      selectedCallDetails.records.filter(
+                        (r) => r.status === 'Presente',
+                      ).length
+                    }
                   </p>
                   <p className="text-sm text-emerald-600 mt-1">Presentes</p>
                 </div>
                 <div className="p-4 bg-rose-50 rounded-xl text-center">
                   <p className="text-3xl font-bold text-rose-600">
-                            {selectedCallDetails.records.filter(r => r.status === 'Ausente').length}
+                    {
+                      selectedCallDetails.records.filter(
+                        (r) => r.status === 'Ausente',
+                      ).length
+                    }
                   </p>
                   <p className="text-sm text-rose-600 mt-1">Ausentes</p>
                 </div>
                 <div className="p-4 bg-amber-50 rounded-xl text-center">
                   <p className="text-3xl font-bold text-amber-600">
-                            {selectedCallDetails.records.filter(r => r.status === 'Justificado').length}
+                    {
+                      selectedCallDetails.records.filter(
+                        (r) => r.status === 'Justificado',
+                      ).length
+                    }
                   </p>
                   <p className="text-sm text-amber-600 mt-1">Justificadas</p>
                 </div>
@@ -800,48 +1027,73 @@ export default function Attendance() {
 
               {/* Students List */}
               <div>
-                <h4 className="font-semibold text-slate-800 mb-3">Lista de Alunos</h4>
+                <h4 className="font-semibold text-slate-800 mb-3">
+                  Lista de Alunos
+                </h4>
                 <div className="space-y-2">
                   {selectedCallDetails.records
                     .sort((a, b) => {
-                      const studentA = students.find(s => s.id === a.student_id);
-                      const studentB = students.find(s => s.id === b.student_id);
-                      return (studentA?.full_name || '').localeCompare(studentB?.full_name || '');
+                      const studentA = students.find(
+                        (s) => s.id === a.student_id,
+                      );
+                      const studentB = students.find(
+                        (s) => s.id === b.student_id,
+                      );
+                      return (studentA?.full_name || '').localeCompare(
+                        studentB?.full_name || '',
+                      );
                     })
                     .map((record) => {
-                      const student = students.find(s => s.id === record.student_id);
+                      const student = students.find(
+                        (s) => s.id === record.student_id,
+                      );
                       if (!student) return null;
 
                       return (
-                        <div key={record.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                        <div
+                          key={record.id}
+                          className="flex items-center justify-between p-3 bg-slate-50 rounded-xl"
+                        >
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-gradient-from-light)] to-[var(--brand-gradient-to-light)] flex items-center justify-center text-white font-bold">
                               {student.full_name?.charAt(0)?.toUpperCase()}
                             </div>
                             <div>
-                              <p className="font-medium text-slate-800">{student.full_name}</p>
-                              <p className="text-sm text-slate-500">{student.grade}</p>
+                              <p className="font-medium text-slate-800">
+                                {student.full_name}
+                              </p>
+                              <p className="text-sm text-slate-500">
+                                {student.grade}
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
-                            <Badge className={cn(
-                              record.status === 'Presente' && "bg-emerald-100 text-emerald-700",
-                              record.status === 'Ausente' && "bg-rose-100 text-rose-700",
-                              record.status === 'Justificado' && "bg-amber-100 text-amber-700"
-                            )}>
+                            <Badge
+                              className={cn(
+                                record.status === 'Presente' &&
+                                  'bg-emerald-100 text-emerald-700',
+                                record.status === 'Ausente' &&
+                                  'bg-rose-100 text-rose-700',
+                                record.status === 'Justificado' &&
+                                  'bg-amber-100 text-amber-700',
+                              )}
+                            >
                               {record.status}
                             </Badge>
-                            {record.status === 'Justificado' && record.justification && (
-                              <button
-                                onClick={() => {
-                                  toast.info(record.justification, { duration: 5000 });
-                                }}
-                                className="p-2 hover:bg-slate-200 rounded-lg"
-                                title="Ver justificativa"
-                              >
-                                <MessageSquare className="w-4 h-4 text-amber-600" />
-                              </button>
-                            )}
+                            {record.status === 'Justificado' &&
+                              record.justification && (
+                                <button
+                                  onClick={() => {
+                                    toast.info(record.justification, {
+                                      duration: 5000,
+                                    });
+                                  }}
+                                  className="p-2 hover:bg-slate-200 rounded-lg"
+                                  title="Ver justificativa"
+                                >
+                                  <MessageSquare className="w-4 h-4 text-amber-600" />
+                                </button>
+                              )}
                           </div>
                         </div>
                       );
@@ -850,20 +1102,35 @@ export default function Attendance() {
               </div>
 
               {/* Justifications */}
-                {selectedCallDetails.records.some(r => r.status === 'Justificado' && r.justification) && (
+              {selectedCallDetails.records.some(
+                (r) => r.status === 'Justificado' && r.justification,
+              ) && (
                 <div>
-                  <h4 className="font-semibold text-slate-800 mb-3">Justificativas</h4>
+                  <h4 className="font-semibold text-slate-800 mb-3">
+                    Justificativas
+                  </h4>
                   <div className="space-y-3">
                     {selectedCallDetails.records
-                      .filter(r => r.status === 'Justificado' && r.justification)
+                      .filter(
+                        (r) => r.status === 'Justificado' && r.justification,
+                      )
                       .map((record) => {
-                        const student = students.find(s => s.id === record.student_id);
+                        const student = students.find(
+                          (s) => s.id === record.student_id,
+                        );
                         if (!student) return null;
 
                         return (
-                          <div key={record.id} className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                            <p className="font-medium text-slate-800 mb-2">{student.full_name}</p>
-                            <p className="text-sm text-slate-600">{record.justification}</p>
+                          <div
+                            key={record.id}
+                            className="p-4 bg-amber-50 border border-amber-200 rounded-xl"
+                          >
+                            <p className="font-medium text-slate-800 mb-2">
+                              {student.full_name}
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {record.justification}
+                            </p>
                           </div>
                         );
                       })}
@@ -885,7 +1152,11 @@ export default function Attendance() {
             Ao finalizar, esta chamada não poderá ser alterada.
           </div>
           <div className="flex items-center justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setShowConfirmSave(false)} disabled={isSaving}>
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmSave(false)}
+              disabled={isSaving}
+            >
               Cancelar
             </Button>
             <Button
@@ -919,7 +1190,10 @@ export default function Attendance() {
             A chamada foi registrada com sucesso.
           </div>
           <div className="flex items-center justify-end pt-2">
-            <Button onClick={() => setShowSaved(false)} className="bg-indigo-500 hover:bg-indigo-600 text-white">
+            <Button
+              onClick={() => setShowSaved(false)}
+              className="bg-indigo-500 hover:bg-indigo-600 text-white"
+            >
               Ok
             </Button>
           </div>

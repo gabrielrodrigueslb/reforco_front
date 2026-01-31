@@ -9,13 +9,22 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'http',
+        hostname: 'localhost',
+        port: '4457',
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'http',
         hostname: '192.168.15.9',
+      },
+      {
+        protocol: 'http',
+        hostname: '192.168.15.9',
+        port: '4457',
+        pathname: '/uploads/**',
       },
     ],
   },
-};
-
-module.exports = {
   allowedDevOrigins: [
     '192.168.15.9',
     'local-origin.dev',
@@ -24,6 +33,5 @@ module.exports = {
     '192.168.15.9:3000',
   ],
 };
-
 
 export default nextConfig;

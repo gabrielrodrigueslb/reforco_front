@@ -27,7 +27,7 @@ export default function PageTitle({
       >
         <PanelLeft className="w-5 h-5" />
       </Button>
-      <h1 className={cn('text-2xl lg:text-3xl font-bold opacity-80', className)}>
+      <h1 className={cn('text-2xl lg:text-3xl font-bold opacity-90', className)}>
         {title}
       </h1>
     </div>

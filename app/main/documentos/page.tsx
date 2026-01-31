@@ -696,7 +696,7 @@ export default function Documents() {
 
         <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex items-start gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-linear-to-br from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] flex items-center justify-center shadow-lg shadow-indigo-200">
+            <div className="h-14 w-14 rounded-2xl bg-linear-to-br from-(--brand-gradient-from) to-(--brand-gradient-to) flex items-center justify-center shadow-lg shadow-indigo-200">
               <FileText className="w-7 h-7 text-white" />
             </div>
 
@@ -738,7 +738,7 @@ export default function Documents() {
                   setNewTemplate({ name: '', category: '', content: '', file_url: '', file_type: 'html' })
                   setShowTemplateModal(true)
                 }}
-                className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] h-11 rounded-xl"
+                className="bg-linear-to-r from-(--brand-gradient-from) to-(--brand-gradient-to) h-11 rounded-xl"
               >
                 <Plus className="w-5 h-5 mr-2" />
                 Novo Template
@@ -750,7 +750,7 @@ export default function Documents() {
                   resetUploadForm()
                   setShowUploadModal(true)
                 }}
-                className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] h-11 rounded-xl"
+                className="bg-linear-to-r from-(--brand-gradient-from) to-(--brand-gradient-to) h-11 rounded-xl"
               >
                 <Upload className="w-5 h-5 mr-2" />
                 Upload Arquivo
@@ -788,7 +788,7 @@ export default function Documents() {
                 setNewTemplate({ name: '', category: '', content: '', file_url: '', file_type: 'html' })
                 setShowTemplateModal(true)
               }}
-              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] h-11 px-6 rounded-xl"
+              className="bg-linear-to-r from-(--brand-gradient-from) to-(--brand-gradient-to) h-11 px-6 rounded-xl"
             >
               <Plus className="w-5 h-5 mr-2" />
               Novo Template
@@ -799,7 +799,7 @@ export default function Documents() {
                 resetUploadForm()
                 setShowUploadModal(true)
               }}
-              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] h-11 px-6 rounded-xl"
+              className="bg-linear-to-r from-(--brand-gradient-from) to-(--brand-gradient-to) h-11 px-6 rounded-xl"
             >
               <Upload className="w-5 h-5 mr-2" />
               Upload Arquivo
@@ -908,7 +908,7 @@ export default function Documents() {
                       Ver
                     </Button>
                     <Button
-                      className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
+                      className="bg-linear-to-r from-(--brand-gradient-from) to-(--brand-gradient-to)"
                       onClick={() => handleDownloadTemplate(template)}
                     >
                       <Download className="w-4 h-4 mr-2" />
@@ -988,7 +988,7 @@ export default function Documents() {
                   resetUploadForm()
                   setShowUploadModal(true)
                 }}
-                className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
+                className="bg-linear-to-r from-(--brand-gradient-from) to-(--brand-gradient-to)"
               >
                 <Upload className="w-5 h-5 mr-2" />
                 Upload Arquivo
@@ -1163,7 +1163,7 @@ export default function Documents() {
             <Button
               onClick={handleUploadSubmit}
               disabled={!uploadForm.file_url || !uploadForm.category || savingUpload}
-              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
+              className="bg-linear-to-r from-(--brand-gradient-from) to-(--brand-gradient-to)"
             >
               {savingUpload ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Salvar
@@ -1287,7 +1287,7 @@ export default function Documents() {
             </Button>
             <Button
               onClick={handleSaveTemplate}
-              className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
+              className="bg-linear-to-r from-(--brand-gradient-from) to-(--brand-gradient-to)"
               disabled={savingTemplate}
             >
               {savingTemplate ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
@@ -1320,7 +1320,7 @@ export default function Documents() {
                     Editar
                   </Button>
                   <Button
-                    className="bg-linear-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)]"
+                    className="bg-linear-to-r from-(--brand-gradient-from) to-(--brand-gradient-to)"
                     onClick={() => handleDownloadTemplate(previewTemplate)}
                   >
                     <Download className="w-4 h-4 mr-2" />

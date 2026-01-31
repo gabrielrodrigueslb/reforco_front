@@ -1,42 +1,24 @@
-import { classesMock, ClassItem } from '@/types/classes'
-
-let classes = [...classesMock]
+import { api } from '@/lib/api'
+import { ClassItem } from '@/types/classes'
 
 export const ClassesService = {
   list: async (): Promise<ClassItem[]> => {
-    await delay()
-    return classes.sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    )
+    const { data } = await api.get<ClassItem[]>('/turmas')
+    return data
   },
 
   create: async (data: Omit<ClassItem, 'id' | 'created_at'>) => {
-    await delay()
-    const newClass: ClassItem = {
-      ...data,
-      id: crypto.randomUUID(),
-      created_at: new Date().toISOString(),
-    }
-    classes.push(newClass)
-    return newClass
+    const { data: created } = await api.post<ClassItem>('/turmas', data)
+    return created
   },
 
   update: async (id: string, data: Partial<ClassItem>) => {
-    await delay()
-    classes = classes.map((c) =>
-      c.id === id ? { ...c, ...data } : c
-    )
-    return classes.find((c) => c.id === id)
+    const { data: updated } = await api.put<ClassItem>(`/turmas/${id}`, data)
+    return updated
   },
 
   delete: async (id: string) => {
-    await delay()
-    classes = classes.filter((c) => c.id !== id)
+    await api.delete(`/turmas/${id}`)
     return true
   },
-}
-
-function delay(ms = 400) {
-  return new Promise((res) => setTimeout(res, ms))
 }

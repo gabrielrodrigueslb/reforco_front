@@ -8,6 +8,7 @@ import {
   Attendance,
   EventItem,
   Announcement,
+  DashboardData,
 } from '@/types/dashboard';
 import StatsCard from '@/components/dashboard/StatsCard';
 import PerformanceIndicator from '@/components/dashboard/PerformanceIndicator';
@@ -16,15 +17,10 @@ import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
 import UpcomingEvents from '@/components/dashboard/UpcomingEvents';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageTitle from '@/components/page-title';
-export interface DashboardData {
-  students: Student[];
-  classes: Class[];
-  todayAttendance: Attendance[];
-  weekAttendance: Attendance[];
-  events: EventItem[];
-  announcements: Announcement[];
-}
-
+import { StudentsService, StudentResponse } from '@/services/students.service';
+import { ClassesService } from '@/services/classes.service';
+import { AttendanceService, AttendanceRecord } from '@/services/attendance.service';
+import type { ClassItem } from '@/types/classes';
 
 // --- UTILITÁRIOS DE DATA (NATIVOS) ---
 const getTodayISO = () => new Date().toISOString().split('T')[0];
@@ -44,98 +40,6 @@ const getWeekRange = () => {
   };
 };
 
-// --- DADOS MOCKADOS ---
-const MOCK_STUDENTS: Student[] = [
-  { id: '1', status: 'Ativo', performance_indicator: 'Melhorando' },
-  { id: '2', status: 'Ativo', performance_indicator: 'Atenção' },
-  { id: '3', status: 'Ativo', performance_indicator: 'Melhorando' },
-  { id: '4', status: 'Inativo', performance_indicator: 'Não avaliado' },
-  { id: '5', status: 'Ativo', performance_indicator: 'Decaindo' },
-  { id: '6', status: 'Ativo', performance_indicator: 'Melhorando' },
-  { id: '7', status: 'Ativo', performance_indicator: 'Atenção' },
-  { id: '8', status: 'Ativo', performance_indicator: 'Melhorando' },
-];
-
-const MOCK_CLASSES: Class[] = [
-  { id: 'c1', status: 'Ativa' },
-  { id: 'c2', status: 'Ativa' },
-  { id: 'c3', status: 'Ativa' },
-  { id: 'c4', status: 'Inativa' },
-];
-
-
-// Gera chamadas para a semana atual para popular o gráfico
-const generateMockAttendance = (): Attendance[] => {
-  const { start } = getWeekRange();
-  const startDate = new Date(start);
-  const records: Attendance[] = [];
-
-  for (let i = 0; i < 5; i++) {
-    const d = new Date(startDate);
-    d.setDate(d.getDate() + i);
-    const dateStr = d.toISOString().split('T')[0];
-
-    records.push(
-      { date: dateStr, status: 'Presente' },
-      { date: dateStr, status: 'Presente' },
-      { date: dateStr, status: 'Presente' },
-      { date: dateStr, status: 'Presente' },
-    );
-
-    if (i % 2 === 0) {
-      records.push({ date: dateStr, status: 'Ausente' });
-    }
-
-    records.push({ date: dateStr, status: 'Presente' });
-  }
-
-  return records;
-};
-
-
-const MOCK_ATTENDANCE = generateMockAttendance();
-
-const MOCK_EVENTS: EventItem[] = [
-  {
-    id: 'e1',
-    title: 'Reunião de Pais',
-    date: getTodayISO(),
-    event_type: 'Reunião',
-  },
-  {
-    id: 'e2',
-    title: 'Feira de Ciências',
-    date: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
-    event_type: 'Evento',
-  },
-  {
-    id: 'e3',
-    title: 'Conselho de Classe',
-    date: new Date(Date.now() + 86400000 * 5).toISOString().split('T')[0],
-    event_type: 'Aula Especial',
-  },
-];
-
-
-const MOCK_ANNOUNCEMENTS: Announcement[] = [
-  {
-    id: 'a1',
-    title: 'Renovação de Matrícula',
-    content: 'O período de renovação começa na próxima semana.',
-    date: '2023-10-20',
-    is_active: true,
-    priority: 'high',
-  },
-  {
-    id: 'a2',
-    title: 'Novo horário da biblioteca',
-    content: 'A biblioteca funcionará até as 18h.',
-    date: '2023-10-22',
-    is_active: true,
-    priority: 'normal',
-  },
-];
-
 
 export default function Dashboard() {
   // Estado local
@@ -154,24 +58,81 @@ export default function Dashboard() {
   const { start: weekStart, end: weekEnd } = getWeekRange();
 
   useEffect(() => {
-    // Simulação de Fetch de dados
-    setTimeout(() => {
-      // Filtragem simula o comportamento do backend
-      const todayAtt = MOCK_ATTENDANCE.filter((a) => a.date === today);
-      const weekAtt = MOCK_ATTENDANCE.filter(
-        (a) => a.date >= weekStart && a.date <= weekEnd,
-      );
+    let mounted = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [studentsRaw, classesRaw, weekMorning, weekAfternoon] =
+          await Promise.all([
+            StudentsService.list(),
+            ClassesService.list(),
+            AttendanceService.history({
+              from: weekStart,
+              to: weekEnd,
+              turno: 'Manh?',
+              turmaId: null,
+            }),
+            AttendanceService.history({
+              from: weekStart,
+              to: weekEnd,
+              turno: 'Tarde',
+              turmaId: null,
+            }),
+          ]);
 
-      setData({
-        students: MOCK_STUDENTS,
-        classes: MOCK_CLASSES,
-        todayAttendance: todayAtt,
-        weekAttendance: weekAtt,
-        events: MOCK_EVENTS,
-        announcements: MOCK_ANNOUNCEMENTS,
-      });
-      setLoading(false);
-    }, 1000); // 1 segundo de delay
+        const students: Student[] = (studentsRaw || []).map((s: StudentResponse) => ({
+          id: s.id,
+          status: s.status,
+          performance_indicator: s.performance_indicator || 'N?o avaliado',
+        }));
+
+        const classes: Class[] = (classesRaw || []).map((c: ClassItem) => ({
+          id: String(c.id),
+          status: c.status || 'Ativa',
+        }));
+
+        const toAttendance = (items: AttendanceRecord[]): Attendance[] =>
+          (items || []).map((a) => ({
+            date: a.date,
+            status: a.status === 'Presente' ? 'Presente' : 'Ausente',
+          }));
+
+        const weekAttendance = [
+          ...toAttendance(weekMorning as AttendanceRecord[]),
+          ...toAttendance(weekAfternoon as AttendanceRecord[]),
+        ];
+        const todayAttendance = weekAttendance.filter((a) => a.date === today);
+
+        if (!mounted) return;
+        setData({
+          students,
+          classes,
+          todayAttendance,
+          weekAttendance,
+          events: [] as EventItem[],
+          announcements: [] as Announcement[],
+        });
+      } catch (error) {
+        console.error(error);
+        if (mounted) {
+          setData({
+            students: [],
+            classes: [],
+            todayAttendance: [],
+            weekAttendance: [],
+            events: [],
+            announcements: [],
+          });
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      mounted = false;
+    };
   }, [today, weekStart, weekEnd]);
 
   // Cálculos derivados
