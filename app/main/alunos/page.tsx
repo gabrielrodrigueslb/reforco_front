@@ -623,7 +623,7 @@ export default function Students() {
                       <h3 className="font-semibold text-slate-800 truncate">{student.full_name}</h3>
                       <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-slate-500">
                         <span className="truncate">{student.grade}</span>
-                        {age !== null && <span className="shrink-0">ânos {age} anos</span>}
+                        {age !== null && <span className="shrink-0">{age} anos</span>}
                       </div>
                     </div>
                   </div>

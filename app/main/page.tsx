@@ -20,10 +20,19 @@ import PageTitle from '@/components/page-title';
 import { StudentsService, StudentResponse } from '@/services/students.service';
 import { ClassesService } from '@/services/classes.service';
 import { AttendanceService, AttendanceRecord } from '@/services/attendance.service';
+import { AnnouncementsService } from '@/services/announcements.service';
+import { EventsService } from '@/services/events.service';
 import type { ClassItem } from '@/types/classes';
 
 // --- UTILITÁRIOS DE DATA (NATIVOS) ---
-const getTodayISO = () => new Date().toISOString().split('T')[0];
+const toLocalISO = (date: Date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const getTodayISO = () => toLocalISO(new Date());
 
 const getWeekRange = () => {
   const curr = new Date();
@@ -35,8 +44,8 @@ const getWeekRange = () => {
   const sunday = new Date(curr.setDate(monday.getDate() + 6));
 
   return {
-    start: monday.toISOString().split('T')[0],
-    end: sunday.toISOString().split('T')[0],
+    start: toLocalISO(monday),
+    end: toLocalISO(sunday),
   };
 };
 
@@ -62,14 +71,14 @@ export default function Dashboard() {
     const load = async () => {
       setLoading(true);
       try {
-        const [studentsRaw, classesRaw, weekMorning, weekAfternoon] =
+        const [studentsRaw, classesRaw, weekMorning, weekAfternoon, weekMorningPlain, announcements, eventsRaw] =
           await Promise.all([
             StudentsService.list(),
             ClassesService.list(),
             AttendanceService.history({
               from: weekStart,
               to: weekEnd,
-              turno: 'Manh?',
+              turno: 'Manhã',
               turmaId: null,
             }),
             AttendanceService.history({
@@ -78,12 +87,20 @@ export default function Dashboard() {
               turno: 'Tarde',
               turmaId: null,
             }),
+            AttendanceService.history({
+              from: weekStart,
+              to: weekEnd,
+              turno: 'Manha',
+              turmaId: null,
+            }),
+            AnnouncementsService.list(),
+            EventsService.list({ from: weekStart, to: weekEnd }),
           ]);
 
         const students: Student[] = (studentsRaw || []).map((s: StudentResponse) => ({
           id: s.id,
           status: s.status,
-          performance_indicator: s.performance_indicator || 'N?o avaliado',
+          performance_indicator: s.performance_indicator || 'Não avaliado',
         }));
 
         const classes: Class[] = (classesRaw || []).map((c: ClassItem) => ({
@@ -94,12 +111,18 @@ export default function Dashboard() {
         const toAttendance = (items: AttendanceRecord[]): Attendance[] =>
           (items || []).map((a) => ({
             date: a.date,
-            status: a.status === 'Presente' ? 'Presente' : 'Ausente',
+            status:
+              a.status === 'Presente'
+                ? 'Presente'
+                : a.status === 'Justificado'
+                  ? 'Presente'
+                  : 'Ausente',
           }));
 
         const weekAttendance = [
           ...toAttendance(weekMorning as AttendanceRecord[]),
           ...toAttendance(weekAfternoon as AttendanceRecord[]),
+          ...toAttendance(weekMorningPlain as AttendanceRecord[]),
         ];
         const todayAttendance = weekAttendance.filter((a) => a.date === today);
 
@@ -109,8 +132,8 @@ export default function Dashboard() {
           classes,
           todayAttendance,
           weekAttendance,
-          events: [] as EventItem[],
-          announcements: [] as Announcement[],
+          announcements,
+          events: (eventsRaw || []).map(EventsService.toDashboard),
         });
       } catch (error) {
         console.error(error);

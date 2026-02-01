@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   format,
   startOfMonth,
@@ -46,17 +46,7 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import PageTitle from '@/components/page-title'
-
-type CalendarEvent = {
-  id: string
-  title: string
-  description?: string
-  event_type: string
-  date: string // yyyy-MM-dd
-  start_time?: string
-  end_time?: string
-  color?: string
-}
+import { EventsService, CalendarEvent } from '@/services/events.service'
 
 const eventTypes = ['Aula Especial', 'Reunião', 'Prova', 'Evento', 'Feriado', 'Outro'] as const
 
@@ -69,40 +59,27 @@ const eventColors: Record<string, string> = {
   Outro: '#64748b',
 }
 
-function safeId() {
-  // @ts-ignore
-  return (globalThis?.crypto?.randomUUID?.() as string) ?? Math.random().toString(36).slice(2, 11)
-}
-
-// ===== MOCK DATA =====
-const MOCK_EVENTS: CalendarEvent[] = [
-  {
-    id: 'evt-1',
-    title: 'Aula Especial',
-    description: 'Revisão geral',
-    event_type: 'Aula Especial',
-    date: format(new Date(), 'yyyy-MM-dd'),
-    start_time: '18:00',
-    end_time: '19:30',
-    color: eventColors['Aula Especial'],
-  },
-  {
-    id: 'evt-2',
-    title: 'Reunião com responsáveis',
-    event_type: 'Reunião',
-    date: format(new Date(), 'yyyy-MM-dd'),
-    start_time: '20:00',
-    end_time: '21:00',
-    color: eventColors['Reunião'],
-  },
-]
-
 export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
 
   // substitui Base44 por estado local
-  const [events, setEvents] = useState<CalendarEvent[]>(MOCK_EVENTS)
+  const [events, setEvents] = useState<CalendarEvent[]>([])
+  useEffect(() => {
+    const from = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
+    const to = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
+    EventsService.list({ from, to })
+      .then((data) =>
+        setEvents(
+          (data || []).map((e) => ({
+            ...e,
+            color: e.color || eventColors[e.event_type] || '#6366f1',
+          }))
+        )
+      )
+      .catch(() => toast.error('N??o foi poss??vel carregar eventos'));
+  }, [currentMonth]);
+
 
   const [showModal, setShowModal] = useState(false)
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
@@ -160,8 +137,7 @@ export default function CalendarPage() {
     const color = eventColors[formData.event_type] || formData.color
 
     if (editingEvent) {
-      const updated: CalendarEvent = {
-        ...editingEvent,
+      EventsService.update(editingEvent.id, {
         title: formData.title,
         description: formData.description || '',
         event_type: formData.event_type,
@@ -169,17 +145,18 @@ export default function CalendarPage() {
         start_time: formData.start_time || '',
         end_time: formData.end_time || '',
         color,
-      }
-
-      setEvents((prev) => prev.map((e) => (e.id === editingEvent.id ? updated : e)))
-      setShowModal(false)
-      resetForm()
-      toast.success('Evento atualizado!')
+      })
+        .then((updated) => {
+          setEvents((prev) => prev.map((e) => (e.id === editingEvent.id ? updated : e)))
+          setShowModal(false)
+          resetForm()
+          toast.success('Evento atualizado!')
+        })
+        .catch(() => toast.error('N??o foi poss??vel atualizar'))
       return
     }
 
-    const created: CalendarEvent = {
-      id: safeId(),
+    EventsService.create({
       title: formData.title,
       description: formData.description || '',
       event_type: formData.event_type,
@@ -187,12 +164,14 @@ export default function CalendarPage() {
       start_time: formData.start_time || '',
       end_time: formData.end_time || '',
       color,
-    }
-
-    setEvents((prev) => [created, ...prev])
-    setShowModal(false)
-    resetForm()
-    toast.success('Evento criado!')
+    })
+      .then((created) => {
+        setEvents((prev) => [created, ...prev])
+        setShowModal(false)
+        resetForm()
+        toast.success('Evento criado!')
+      })
+      .catch(() => toast.error('N??o foi poss??vel criar'))
   }
 
   const handleConfirmDelete = () => {
