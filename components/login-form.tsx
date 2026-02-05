@@ -126,7 +126,7 @@ export function LoginForm({
             </form>
             <div className="bg-muted relative hidden md:block">
               <Image
-                src="/login-banner.png"
+                src="/banner-login.jpg"
                 alt="Image"
                 fill
                 className="absolute inset-0 object-cover dark:brightness-[0.2] dark:grayscale"

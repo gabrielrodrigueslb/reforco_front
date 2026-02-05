@@ -448,10 +448,10 @@ export default function TurmaDetalhesPage() {
             </div>
           ) : (
             <ul className="divide-y">
-              {alunosDaTurma.map((s) => {
-                const displayName = getStudentName(s)
+              {alunosDaTurma.map((aluno) => {
+                const displayName = getStudentName(aluno)
                 return (
-                  <li key={s.id} className="py-3 flex items-center justify-between gap-3">
+                  <li key={aluno.id} className="py-3 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="h-9 w-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-semibold">
                         {displayName
@@ -463,17 +463,17 @@ export default function TurmaDetalhesPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-slate-900 font-medium truncate">{displayName}</p>
-                        <p className="text-slate-500 text-sm">ID: {s.id}</p>
+                        <p className="text-slate-500 text-sm">ID: {}</p>
                       </div>
                     </div>
 
                     <Button
                       variant="outline"
                       className="border-rose-200 text-rose-600 hover:bg-rose-50"
-                      onClick={() => removeStudentFromClass(s.id)}
-                      disabled={removing === s.id}
+                      onClick={() => removeStudentFromClass(aluno.id)}
+                      disabled={removing === aluno.id}
                     >
-                      {removing === s.id ? (
+                      {removing === aluno.id ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                           Removendo...

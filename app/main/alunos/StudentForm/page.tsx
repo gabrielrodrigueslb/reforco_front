@@ -375,7 +375,7 @@ export default function StudentFormPage() {
             </Select>
           </div>
 
-          <div>
+          <div className=''>
             <Label>CPF *</Label>
             <Input
               value={formatCPF(form.cpf)}
@@ -384,7 +384,7 @@ export default function StudentFormPage() {
             />
           </div>
 
-          <div className="md:col-span-2">
+          <div className="">
             <Label>Endereço *</Label>
             <Input
               value={form.address}

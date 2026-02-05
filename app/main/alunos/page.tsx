@@ -607,7 +607,7 @@ export default function Students() {
                     <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-linear-to-br from-(--brand-gradient-from-light) to-(--brand-gradient-to-light) flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-200 overflow-hidden shrink-0">
                       {student.foto_aluno ? (
                         <Image
-                          src={student.foto_aluno}
+                          src={student.foto_aluno || '/globo.png'}
                           className="object-cover w-full h-full"
                           alt={student.full_name || 'Foto do aluno'}
                           width={56}

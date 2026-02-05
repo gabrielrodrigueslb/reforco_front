@@ -225,7 +225,7 @@ export default function StudentProfile() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.back()}
+            onClick={() => router.push('/main/alunos')}
             className="rounded-xl"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -606,24 +606,24 @@ export default function StudentProfile() {
                 value={gradeForm.subject}
                 onChange={(e) => setGradeForm({ ...gradeForm, subject: e.target.value })}
                 className="mt-2"
-                placeholder="Ex: Matem?tica"
+                placeholder="Ex: Matemática"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 ">
               <div>
                 <Label>Bimestre</Label>
                 <Select
                   value={gradeForm.bimester}
                   onValueChange={(value) => setGradeForm({ ...gradeForm, bimester: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-2 w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">1?</SelectItem>
-                    <SelectItem value="2">2?</SelectItem>
-                    <SelectItem value="3">3?</SelectItem>
-                    <SelectItem value="4">4?</SelectItem>
+                    <SelectItem value="1">1°</SelectItem>
+                    <SelectItem value="2">2°</SelectItem>
+                    <SelectItem value="3">3°</SelectItem>
+                    <SelectItem value="4">4°</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

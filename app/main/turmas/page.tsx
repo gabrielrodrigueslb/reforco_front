@@ -372,7 +372,7 @@ export default function TurmasPage() {
 
       {/* Create/Edit Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lgmx-2">
           <DialogHeader>
             <DialogTitle>{editingClass ? 'Editar Turma' : 'Nova Turma'}</DialogTitle>
           </DialogHeader>
@@ -395,7 +395,7 @@ export default function TurmasPage() {
                   value={formData.grade}
                   onValueChange={(value) => setFormData({ ...formData, grade: value })}
                 >
-                  <SelectTrigger className="mt-2 h-12 rounded-xl">
+                  <SelectTrigger className="mt-2 h-12 rounded-xl w-full">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
@@ -414,7 +414,7 @@ export default function TurmasPage() {
                   value={formData.shift}
                   onValueChange={(value) => setFormData({ ...formData, shift: value })}
                 >
-                  <SelectTrigger className="mt-2 h-12 rounded-xl">
+                  <SelectTrigger className="mt-2 h-12 rounded-xl w-full">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
@@ -430,14 +430,14 @@ export default function TurmasPage() {
 
             <div>
               <Label className="text-slate-700 font-medium mb-3 block">Dias da Semana</Label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 justify-between">
                 {weekDays.map((day) => (
                   <button
                     key={day}
                     type="button"
                     onClick={() => toggleDay(day)}
                     className={cn(
-                      'px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                      'px-3 py-2 rounded-lg text-sm font-medium transition-all flex-1',
                       formData.days_of_week.includes(day)
                         ? 'bg-indigo-500 text-white'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -498,7 +498,7 @@ export default function TurmasPage() {
                     setFormData({ ...formData, status: value })
                   }
                 >
-                  <SelectTrigger className="mt-2 h-12 rounded-xl">
+                  <SelectTrigger className="mt-2 h-12 rounded-xl w-full">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
