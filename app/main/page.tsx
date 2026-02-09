@@ -52,7 +52,7 @@ const getWeekRange = () => {
 const normalizePerformanceIndicator = (
   value?: string,
 ): Student['performance_indicator'] => {
-  if (!value) return 'NÃ£o avaliado' as Student['performance_indicator'];
+  if (!value) return 'Não avaliado' as Student['performance_indicator'];
   return value as Student['performance_indicator'];
 };
 
@@ -92,7 +92,7 @@ export default function Dashboard() {
             AttendanceService.history({
               from: weekStart,
               to: weekEnd,
-              turno: 'ManhÃ£',
+              turno: 'Manhã',
               turmaId: null,
             }),
             AttendanceService.history({
@@ -210,7 +210,7 @@ export default function Dashboard() {
           title="Dashboard"
           className="text-2xl lg:text-3xl font-bold text-slate-800"
         />
-        <p className="text-slate-500 mt-1">VisÃ£o geral da sua escola</p>
+        <p className="text-slate-500 mt-1">Visão geral da sua escola</p>
       </div>
 
       {/* Stats Cards */}
@@ -232,7 +232,7 @@ export default function Dashboard() {
         <StatsCard
           title="Ausentes Hoje"
           value={absentToday}
-          subtitle="Precisam de atenÃ§Ã£o"
+          subtitle="Precisam de atenção"
           icon={UserX}
           color="rose"
         />

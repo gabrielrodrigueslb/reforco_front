@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/sidebar';
 import Image from 'next/image';
 import { logoutRequest } from '@/lib/auth';
+import { withUploadsBase } from '@/lib/uploads';
 import { useRouter } from 'next/navigation';
 import LogoutModal from './logoutModal';
 import { useState } from 'react';
@@ -46,8 +47,7 @@ export function NavUser({
 }) {
   const [openModalLogout, setOpenModalLogout] = useState(false);
   const { isMobile } = useSidebar();
-  const baseUrl =
-    process.env.NEXT_PUBLIC_URLBASE_UPLOAD || 'http://localhost:4457';
+  const avatarSrc = withUploadsBase(user.avatarUrl);
 
   const toggleModalLogout = () => {
     setOpenModalLogout(!openModalLogout);
@@ -73,7 +73,7 @@ export function NavUser({
                 <Avatar className="h-10 w-10 rounded-full select-none">
                   <AvatarImage
                     className="animate-in fade-in duration-50"
-                    src={`${baseUrl}${user.avatarUrl}`}
+                    src={avatarSrc}
                     alt={user.name}
                   />
                   <AvatarFallback className="rounded-lg">
@@ -98,10 +98,7 @@ export function NavUser({
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <Avatar className="h-10 w-10 rounded-full">
-                    <AvatarImage
-                      src={`${baseUrl}${user.avatarUrl}`}
-                      alt={user.name}
-                    />
+                    <AvatarImage src={avatarSrc} alt={user.name} />
                     <AvatarFallback className="rounded-lg overflow-hidden">
                       <Image
                         src={'/profile/tedio.png'}

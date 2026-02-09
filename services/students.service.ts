@@ -1,4 +1,5 @@
 import { api } from '@/lib/api';
+import { withUploadsBase } from '@/lib/uploads';
 
 export type GuardianPayload = {
   is_primary?: boolean;
@@ -40,13 +41,7 @@ export type StudentResponse = StudentPayload & {
 };
 
 function normalizeStudent(data: StudentResponse): StudentResponse {
-  const baseUpload = process.env.NEXT_PUBLIC_URLBASE_UPLOAD || '';
-  const foto =
-    data.foto_aluno && data.foto_aluno.startsWith('http')
-      ? data.foto_aluno
-      : data.foto_aluno
-        ? `${baseUpload}${data.foto_aluno}`
-        : undefined;
+  const foto = withUploadsBase(data.foto_aluno);
 
   return {
     ...data,

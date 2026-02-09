@@ -17,6 +17,7 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import LogoutModal from './logoutModal';
 import { cn } from '@/lib/utils';
+import { withUploadsBase } from '@/lib/uploads';
 import { getSession } from '@/lib/auth';
 import {
   DropdownMenu,
@@ -75,8 +76,7 @@ export default function Sidebar({
       getMe();
     }, []);
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_URLBASE_UPLOAD || 'http://localhost:4457';
+  const avatarSrc = withUploadsBase(user?.avatarUrl);
 
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, page: '/main' },
@@ -164,7 +164,7 @@ export default function Sidebar({
                 <DropdownMenuTrigger asChild>
                   <button className="flex flex-1 items-center gap-3 p-3 rounded-xl bg-sidebar-accent text-left transition-colors hover:bg-sidebar-border">
                     <div className="w-10 h-10 rounded-full bg-linear-to-br from-(--brand-gradient-from-light) to-(--brand-gradient-to-light) flex items-center justify-center text-white font-semibold overflow-hidden">
-                      <img src={`${baseUrl}${user.avatarUrl}`|| "/globo.png"} alt="" />
+                      <img src={avatarSrc || "/globo.png"} alt="" />
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-sidebar-foreground truncate">

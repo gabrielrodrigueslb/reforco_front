@@ -1,4 +1,5 @@
 import { api } from '@/lib/api';
+import { withUploadsBase } from '@/lib/uploads';
 
 export type StudentDocument = {
   id: string;
@@ -19,10 +20,7 @@ export type StudentDocumentPayload = {
 };
 
 function normalizeUrl(url?: string) {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  const base = process.env.NEXT_PUBLIC_URLBASE_UPLOAD || '';
-  return `${base}${url}`;
+  return withUploadsBase(url) || '';
 }
 
 function normalizeDocument(doc: StudentDocument): StudentDocument {

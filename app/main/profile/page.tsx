@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import PageTitle from '@/components/page-title'
 
 import { getSession } from '@/lib/auth'
+import { getUploadsBaseUrl, withUploadsBase } from '@/lib/uploads'
 
 interface UserData {
   id?: string
@@ -68,16 +69,11 @@ export default function ProfilePage() {
     loadSession()
   }, [])
 
-  const baseUrl = process.env.NEXT_PUBLIC_URLBASE_UPLOAD || 'http://localhost:4457'
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4457/api'
+  const baseUrl = getUploadsBaseUrl()
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || `${baseUrl}/api`
   const apiKey = process.env.NEXT_PUBLIC_API_KEY || ''
 
-  const resolvedAvatar =
-    user?.avatarUrl && user.avatarUrl.startsWith('http')
-      ? user.avatarUrl
-      : user?.avatarUrl
-        ? `${baseUrl}${user.avatarUrl}`
-        : undefined
+  const resolvedAvatar = withUploadsBase(user?.avatarUrl)
 
   const avatarSrc = avatarPreview || resolvedAvatar
 
