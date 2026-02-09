@@ -46,12 +46,12 @@ import PageTitle from '@/components/page-title'
 
 type ClassesServiceAPI = {
   list: () => Promise<ClassItem[]>
-  update: (id: string, data: Partial<ClassItem>) => Promise<void>
+  update: (id: string, data: Partial<ClassItem>) => Promise<ClassItem>
 };
 
 type StudentsServiceAPI = {
   list: () => Promise<Student[]>
-  update?: (id: string, data: Partial<Student>) => Promise<void>
+  update?: (id: string, data: Partial<Student>) => Promise<Student>
   setClass?: (id: string, classId: string) => Promise<void>
 };
 

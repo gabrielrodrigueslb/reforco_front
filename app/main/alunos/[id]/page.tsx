@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -147,7 +147,7 @@ export default function StudentProfile() {
         setDocuments(docs || []);
       })
       .catch(() => {
-        toast.error('Não foi possível carregar o aluno');
+        toast.error('Não foi possí­vel carregar o aluno');
         setStudent(null);
         setGuardians([]);
         setAttendanceRecords([]);
@@ -224,7 +224,7 @@ export default function StudentProfile() {
       color: 'text-emerald-600',
       bg: 'bg-emerald-100',
     },
-    Atenção: { icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-100' },
+    'Atenção': { icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-100' },
     Decaindo: { icon: TrendingDown, color: 'text-rose-600', bg: 'bg-rose-100' },
     'Não avaliado': {
       icon: AlertCircle,
@@ -233,7 +233,7 @@ export default function StudentProfile() {
     },
   };
 
-  // --- NOVA FUNÇÃO DE DOWNLOAD FORÇADO ---
+  // --- NOVA FUNÃ‡ÃƒO DE DOWNLOAD FORÃ‡ADO ---
   const handleDownload = async (url: string, filename: string) => {
     try {
       setIsDownloading(true);
@@ -253,7 +253,7 @@ export default function StudentProfile() {
       document.body.removeChild(link);
       
       window.URL.revokeObjectURL(blobUrl);
-      toast.success('Download concluído!');
+      toast.success('Download concluÃ­do!');
     } catch (error) {
       console.error(error);
       toast.error('Erro ao baixar. O arquivo será aberto na guia.');
@@ -289,9 +289,8 @@ export default function StudentProfile() {
   }
 
   const age = calculateAge(student.birth_date);
-  const perf =
-    performanceConfig[student.performance_indicator] ||
-    performanceConfig['Não avaliado'];
+  const perfKey = student.performance_indicator ?? 'Não avaliado';
+  const perf = performanceConfig[perfKey] ?? performanceConfig['Não avaliado'];
   const PerfIcon = perf.icon;
 
   const studentGrades = grades.filter((g) => g.student_id === student.id);
@@ -334,7 +333,7 @@ export default function StudentProfile() {
     { value: 'LAUDO', label: 'Laudo' },
     { value: 'AUTORIZACAO', label: 'Autorização' },
     { value: 'DECLARACAO', label: 'Declaração' },
-    { value: 'MATRICULA', label: 'Matrícula' },
+    { value: 'MATRICULA', label: 'MatrÃ­cula' },
     { value: 'HISTORICO_ESCOLAR', label: 'Histórico Escolar' },
     { value: 'OUTRO', label: 'Outro' },
   ];
@@ -627,9 +626,9 @@ export default function StudentProfile() {
                     </p>
                     <p className="text-xs text-slate-500 mt-1 truncate">
                       {doc.type}
-                      {doc.year ? ` • ${doc.year}` : ''}
+                      {doc.year ? ` â€¢ ${doc.year}` : ''}
                       {doc.created_at
-                        ? ` • ${format(new Date(doc.created_at), "dd/MM/yyyy", { locale: ptBR })}`
+                        ? ` â€¢ ${format(new Date(doc.created_at), "dd/MM/yyyy", { locale: ptBR })}`
                         : ''}
                     </p>
                   </div>
@@ -726,7 +725,7 @@ export default function StudentProfile() {
           </h3>
           <div className="space-y-4 divide-y divide-slate-50">
             <div className="pt-2">
-              <p className="text-sm text-slate-500 mb-1">Tipo Sanguíneo</p>
+              <p className="text-sm text-slate-500 mb-1">Tipo Sanguí­neo</p>
               <p className="font-medium text-slate-800">
                 {student.blood_type || '-'}
               </p>
@@ -1090,7 +1089,7 @@ export default function StudentProfile() {
               <Input
                 value={documentForm.name}
                 onChange={(e) => setDocumentForm((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="Ex.: Autorização de saída"
+                placeholder="Ex.: Autorização de saÃ­da"
                 className="h-11"
               />
             </div>
@@ -1169,7 +1168,7 @@ export default function StudentProfile() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover documento?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não poderá ser desfeita. O arquivo será excluído do registro do aluno.
+              Esta ação não poderá ser desfeita. O arquivo será excluÃ­do do registro do aluno.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1183,3 +1182,5 @@ export default function StudentProfile() {
     </>
   );
 }
+
+

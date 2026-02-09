@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Users, UserCheck, UserX, GraduationCap } from 'lucide-react';
@@ -24,7 +24,7 @@ import { AnnouncementsService } from '@/services/announcements.service';
 import { EventsService } from '@/services/events.service';
 import type { ClassItem } from '@/types/classes';
 
-// --- UTILITÁRIOS DE DATA (NATIVOS) ---
+// --- UTILITÃRIOS DE DATA (NATIVOS) ---
 const toLocalISO = (date: Date) => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -47,6 +47,13 @@ const getWeekRange = () => {
     start: toLocalISO(monday),
     end: toLocalISO(sunday),
   };
+};
+
+const normalizePerformanceIndicator = (
+  value?: string,
+): Student['performance_indicator'] => {
+  if (!value) return 'NÃ£o avaliado' as Student['performance_indicator'];
+  return value as Student['performance_indicator'];
 };
 
 const addDays = (date: Date, days: number) => {
@@ -85,7 +92,7 @@ export default function Dashboard() {
             AttendanceService.history({
               from: weekStart,
               to: weekEnd,
-              turno: 'Manhã',
+              turno: 'ManhÃ£',
               turmaId: null,
             }),
             AttendanceService.history({
@@ -107,7 +114,7 @@ export default function Dashboard() {
         const students: Student[] = (studentsRaw || []).map((s: StudentResponse) => ({
           id: s.id,
           status: s.status,
-          performance_indicator: s.performance_indicator || 'Não avaliado',
+          performance_indicator: normalizePerformanceIndicator(s.performance_indicator),
         }));
 
         const classes: Class[] = (classesRaw || []).map((c: ClassItem) => ({
@@ -165,7 +172,7 @@ export default function Dashboard() {
     };
   }, [today, weekStart, weekEnd, upcomingEnd]);
 
-  // Cálculos derivados
+  // CÃ¡lculos derivados
   const activeStudents = data.students.filter((s) => s.status === 'Ativo');
   const activeClasses = data.classes.filter((c) => c.status === 'Ativa');
   const presentToday = data.todayAttendance.filter(
@@ -203,7 +210,7 @@ export default function Dashboard() {
           title="Dashboard"
           className="text-2xl lg:text-3xl font-bold text-slate-800"
         />
-        <p className="text-slate-500 mt-1">Visão geral da sua escola</p>
+        <p className="text-slate-500 mt-1">VisÃ£o geral da sua escola</p>
       </div>
 
       {/* Stats Cards */}
@@ -225,7 +232,7 @@ export default function Dashboard() {
         <StatsCard
           title="Ausentes Hoje"
           value={absentToday}
-          subtitle="Precisam de atenção"
+          subtitle="Precisam de atenÃ§Ã£o"
           icon={UserX}
           color="rose"
         />
@@ -256,3 +263,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

@@ -1,23 +1,49 @@
-import React from 'react';
-import { Search, Filter, X } from 'lucide-react';
-import { Input } from "@/components/ui/input";
-import { 
+﻿import React from 'react'
+import { Search, Filter, X } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
-const grades = ['1º Ano', '2º Ano', '3º Ano', '4º Ano', '5º Ano', '6º Ano', '7º Ano', '8º Ano', '9º Ano', '1º EM', '2º EM', '3º EM'];
-const shifts = ['Manhã', 'Tarde'];
-const statuses = ['Ativo', 'Inativo'];
-const subjects = ['Português', 'Matemática', 'Ciências', 'História', 'Geografia', 'Inglês'];
+type Filters = {
+  search: string
+  grade: string
+  shift: string
+  status: string
+  difficulty: string
+}
 
-export default function StudentFilters({ filters, setFilters }) {
-  const hasFilters = filters.grade || filters.shift || filters.status || filters.difficulty;
+type StudentFiltersProps = {
+  filters: Filters
+  setFilters: React.Dispatch<React.SetStateAction<Filters>>
+}
+
+const grades = [
+  '1º Ano',
+  '2º Ano',
+  '3º Ano',
+  '4º Ano',
+  '5º Ano',
+  '6º Ano',
+  '7º Ano',
+  '8º Ano',
+  '9º Ano',
+  '1º EM',
+  '2º EM',
+  '3º EM',
+]
+const shifts = ['Manhã', 'Tarde']
+const statuses = ['Ativo', 'Inativo']
+const subjects = ['Português', 'Matemática', 'Ciências', 'História', 'Geografia', 'Inglês']
+
+export default function StudentFilters({ filters, setFilters }: StudentFiltersProps) {
+  const hasFilters = filters.grade || filters.shift || filters.status || filters.difficulty
 
   const clearFilters = () => {
     setFilters({
@@ -25,13 +51,12 @@ export default function StudentFilters({ filters, setFilters }) {
       grade: '',
       shift: '',
       status: '',
-      difficulty: ''
-    });
-  };
+      difficulty: '',
+    })
+  }
 
   return (
     <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-4">
-      {/* Search */}
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         <Input
@@ -42,7 +67,6 @@ export default function StudentFilters({ filters, setFilters }) {
         />
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 text-slate-500">
           <Filter className="w-4 h-4" />
@@ -53,15 +77,19 @@ export default function StudentFilters({ filters, setFilters }) {
           value={filters.grade}
           onValueChange={(value) => setFilters({ ...filters, grade: value })}
         >
-          <SelectTrigger className={cn(
-            "w-32 h-10 rounded-xl",
-            filters.grade && "border-indigo-300 bg-indigo-50"
-          )}>
+          <SelectTrigger
+            className={cn(
+              'w-32 h-10 rounded-xl',
+              filters.grade && 'border-indigo-300 bg-indigo-50',
+            )}
+          >
             <SelectValue placeholder="Série" />
           </SelectTrigger>
           <SelectContent>
-            {grades.map(g => (
-              <SelectItem key={g} value={g}>{g}</SelectItem>
+            {grades.map((g) => (
+              <SelectItem key={g} value={g}>
+                {g}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -70,15 +98,19 @@ export default function StudentFilters({ filters, setFilters }) {
           value={filters.shift}
           onValueChange={(value) => setFilters({ ...filters, shift: value })}
         >
-          <SelectTrigger className={cn(
-            "w-28 h-10 rounded-xl",
-            filters.shift && "border-indigo-300 bg-indigo-50"
-          )}>
+          <SelectTrigger
+            className={cn(
+              'w-28 h-10 rounded-xl',
+              filters.shift && 'border-indigo-300 bg-indigo-50',
+            )}
+          >
             <SelectValue placeholder="Turno" />
           </SelectTrigger>
           <SelectContent>
-            {shifts.map(s => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
+            {shifts.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -87,15 +119,19 @@ export default function StudentFilters({ filters, setFilters }) {
           value={filters.status}
           onValueChange={(value) => setFilters({ ...filters, status: value })}
         >
-          <SelectTrigger className={cn(
-            "w-28 h-10 rounded-xl",
-            filters.status && "border-indigo-300 bg-indigo-50"
-          )}>
+          <SelectTrigger
+            className={cn(
+              'w-28 h-10 rounded-xl',
+              filters.status && 'border-indigo-300 bg-indigo-50',
+            )}
+          >
             <SelectValue placeholder="Situação" />
           </SelectTrigger>
           <SelectContent>
-            {statuses.map(s => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
+            {statuses.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -104,20 +140,24 @@ export default function StudentFilters({ filters, setFilters }) {
           value={filters.difficulty}
           onValueChange={(value) => setFilters({ ...filters, difficulty: value })}
         >
-          <SelectTrigger className={cn(
-            "w-36 h-10 rounded-xl",
-            filters.difficulty && "border-indigo-300 bg-indigo-50"
-          )}>
+          <SelectTrigger
+            className={cn(
+              'w-36 h-10 rounded-xl',
+              filters.difficulty && 'border-indigo-300 bg-indigo-50',
+            )}
+          >
             <SelectValue placeholder="Dificuldade" />
           </SelectTrigger>
           <SelectContent>
-            {subjects.map(s => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
+            {subjects.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        {hasFilters && (
+        {hasFilters ? (
           <Button
             variant="ghost"
             size="sm"
@@ -127,8 +167,8 @@ export default function StudentFilters({ filters, setFilters }) {
             <X className="w-4 h-4 mr-1" />
             Limpar
           </Button>
-        )}
+        ) : null}
       </div>
     </div>
-  );
+  )
 }
