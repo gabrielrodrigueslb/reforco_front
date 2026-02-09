@@ -213,9 +213,16 @@ export default function StudentFormPage() {
     setSaving(true)
     try {
       const changes: Partial<StudentFormData> = {}
+      const setChange = <K extends keyof StudentFormData>(
+        key: K,
+        value: StudentFormData[K],
+      ) => {
+        changes[key] = value
+      }
       if (initialForm) {
         (Object.keys(form) as Array<keyof StudentFormData>).forEach((key) => {
-          if (form[key] !== initialForm[key]) changes[key] = form[key]
+          const value = form[key]
+          if (value !== initialForm[key]) setChange(key, value)
         })
       } else {
         Object.assign(changes, form)
