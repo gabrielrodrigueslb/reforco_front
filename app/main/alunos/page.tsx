@@ -582,7 +582,7 @@ export default function Students() {
       </div>
 
       {/* Pagination */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex justify-between sm:flex-row sm:items-center sm:justify-between gap-3">
         <p className="text-sm text-slate-500">
           {totalItems === 0
             ? 'Nenhum aluno para exibir'
@@ -605,27 +605,7 @@ export default function Students() {
             </Select>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              className="h-9 rounded-xl"
-              disabled={safePage <= 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            >
-              Anterior
-            </Button>
-            <span className="text-sm text-slate-500">
-              {safePage} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              className="h-9 rounded-xl"
-              disabled={safePage >= totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            >
-              Próxima
-            </Button>
-          </div>
+          
         </div>
       </div>
 
@@ -655,7 +635,7 @@ export default function Students() {
           )}
         </div>
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid justify-center grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {pagedStudents.map((student) => {
             const age = calculateAge(student.birth_date)
 
@@ -743,9 +723,10 @@ export default function Students() {
               </div>
             )
           })}
+          
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden block">
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50">
@@ -823,9 +804,34 @@ export default function Students() {
                 )
               })}
             </TableBody>
+            
           </Table>
+          
         </div>
+        
       )}
+
+      <div className="flex items-center justify-center gap-2">
+            <Button
+              variant="outline"
+              className="h-9 rounded-xl"
+              disabled={safePage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              Anterior
+            </Button>
+            <span className="text-sm text-slate-500">
+              {safePage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              className="h-9 rounded-xl"
+              disabled={safePage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Próxima
+            </Button>
+          </div>
 
       {/* New Student Modal */}
       <NewStudentModal

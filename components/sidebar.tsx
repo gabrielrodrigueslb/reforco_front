@@ -6,6 +6,7 @@ import {
   GraduationCap,
   Calendar,
   FileText,
+  Bell,
   ChevronRight,
   X,
   LayoutDashboard,
@@ -85,6 +86,7 @@ export default function Sidebar({
     { name: 'Turmas', icon: GraduationCap, page: '/main/turmas' },
     { name: 'Calendário', icon: Calendar, page: '/main/calendario' },
     { name: 'Documentos', icon: FileText, page: '/main/documentos' },
+    { name: 'Avisos', icon: Bell, page: '/main/avisos' },
   ];
   return (
     <>

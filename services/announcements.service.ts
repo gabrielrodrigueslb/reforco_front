@@ -2,8 +2,9 @@ import { api } from '@/lib/api';
 import { Announcement } from '@/types/dashboard';
 
 export const AnnouncementsService = {
-  list: async (): Promise<Announcement[]> => {
-    const { data } = await api.get<Announcement[]>('/avisos');
+  list: async (options?: { includeInactive?: boolean }): Promise<Announcement[]> => {
+    const params = options?.includeInactive ? { all: true } : undefined;
+    const { data } = await api.get<Announcement[]>('/avisos', { params });
     return data;
   },
   create: async (payload: Omit<Announcement, 'id'>) => {

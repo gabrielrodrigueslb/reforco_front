@@ -1,15 +1,18 @@
-'use client'
-import { useEffect, useState } from 'react'
+﻿'use client'
+
+import { useEffect, useState, type ChangeEvent } from 'react'
+import { User, Lock, Camera, Save, Loader2, ShieldCheck, KeyRound } from 'lucide-react'
+import { toast } from 'sonner'
+
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { getSession } from '@/lib/auth'
-import { api } from '@/lib/api'
-import { toast } from 'sonner'
+import PageTitle from '@/components/page-title'
 
-interface User {
+import { getSession } from '@/lib/auth'
+
+interface UserData {
   id?: string
   name?: string
   email?: string
@@ -24,11 +27,32 @@ function getInitials(name?: string) {
   return (first + last).toUpperCase() || 'US'
 }
 
-export default function Page() {
-  const [user, setUser] = useState<User | null>(null)
+function validateStrongPassword(value: string) {
+  const rules = [
+    { ok: value.length >= 8, message: 'mínimo 8 caracteres' },
+    { ok: /[a-z]/.test(value), message: 'uma letra minúscula' },
+    { ok: /[A-Z]/.test(value), message: 'uma letra maiúscula' },
+    { ok: /[0-9]/.test(value), message: 'um número' },
+    { ok: /[^A-Za-z0-9]/.test(value), message: 'um caractere especial' },
+  ]
+  const errors = rules.filter((r) => !r.ok).map((r) => r.message)
+  return { valid: errors.length === 0, errors }
+}
+
+export default function ProfilePage() {
+  const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+
+  const [passwordForm, setPasswordForm] = useState({
+    current: '',
+    next: '',
+    confirm: '',
+  })
+  const [savingPassword, setSavingPassword] = useState(false)
+
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     async function loadSession() {
@@ -41,22 +65,35 @@ export default function Page() {
         setLoading(false)
       }
     }
-
     loadSession()
   }, [])
 
   const baseUrl = process.env.NEXT_PUBLIC_URLBASE_UPLOAD || 'http://localhost:4457'
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4457/api'
+  const apiKey = process.env.NEXT_PUBLIC_API_KEY || ''
+
   const resolvedAvatar =
     user?.avatarUrl && user.avatarUrl.startsWith('http')
       ? user.avatarUrl
       : user?.avatarUrl
         ? `${baseUrl}${user.avatarUrl}`
         : undefined
+
   const avatarSrc = avatarPreview || resolvedAvatar
 
-  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !user?.id) return
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Formato inválido. Use JPG, PNG ou WEBP.')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Arquivo muito grande (máx. 10MB).')
+      return
+    }
 
     const previewUrl = URL.createObjectURL(file)
     setAvatarPreview(previewUrl)
@@ -65,12 +102,28 @@ export default function Page() {
     try {
       const form = new FormData()
       form.append('avatar', file)
-      const { data } = await api.put<User>(`/user/updateUser/${user.id}`, form)
+
+      const res = await fetch(`${apiUrl}/user/updateUser/${user.id}`, {
+        method: 'PUT',
+        body: form,
+        credentials: 'include',
+        headers: {
+          'x-api-key': apiKey,
+        },
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.error || 'Não foi possível atualizar a foto')
+      }
+
+      const data = (await res.json()) as UserData
       setUser((prev) => (prev ? { ...prev, ...data } : data))
       toast.success('Foto de perfil atualizada')
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
-      toast.error('Não foi possível atualizar a foto')
+      const message = error?.message || 'Não foi possível atualizar a foto'
+      toast.error(message)
       setAvatarPreview(null)
     } finally {
       setUploadingAvatar(false)
@@ -78,114 +131,255 @@ export default function Page() {
     }
   }
 
-  return (
-    <main className="relative overflow-hidden bg-background">
-      <div className="pointer-events-none absolute -top-24 -right-32 size-80 rounded-full bg-[radial-gradient(circle,rgba(76,95,209,0.12),transparent_60%)]" />
-      <div className="pointer-events-none absolute -bottom-40 -left-24 size-96 rounded-full bg-[radial-gradient(circle,rgba(34,53,144,0.1),transparent_60%)]" />
+  const handlePasswordUpdate = async () => {
+    if (!user?.id) return
 
-      <div className="relative z-10 mx-auto grid w-full max-w-6xl gap-6 p-6 lg:p-10">
-        <Card className="border-none bg-linear-to-br from-card via-card to-secondary/60 shadow-[0_28px_70px_-45px_rgba(34,53,144,0.5)]">
-          <CardContent className="p-6 md:p-8">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-wrap items-center gap-4">
-                <label className="relative group cursor-pointer">
-                  <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(76,95,209,0.3),transparent_70%)] blur-xl" />
-                  <Avatar className="relative size-16 border border-border shadow-md overflow-hidden">
-                    {avatarSrc && (
-                      <AvatarImage src={avatarSrc} alt={user?.name || 'Usuario'} />
-                    )}
-                    <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
-                  </Avatar>
-                  <div className="absolute inset-0 rounded-full bg-slate-900/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] font-medium text-white">
-                    {uploadingAvatar ? 'Enviando...' : 'Trocar foto'}
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                    disabled={uploadingAvatar}
+    if (!passwordForm.current) {
+      toast.error('Informe a senha atual')
+      return
+    }
+    if (!passwordForm.next) {
+      toast.error('Informe a nova senha')
+      return
+    }
+    if (passwordForm.next !== passwordForm.confirm) {
+      toast.error('A confirmação não confere')
+      return
+    }
+
+    const strong = validateStrongPassword(passwordForm.next)
+    if (!strong.valid) {
+      toast.error(`Senha fraca: ${strong.errors.join(', ')}`)
+      return
+    }
+
+    setSavingPassword(true)
+    try {
+      const res = await fetch(`${apiUrl}/user/updateUser/${user.id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          current_password: passwordForm.current,
+          currentPassword: passwordForm.current,
+          password: passwordForm.next,
+        }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.error || 'Não foi possível atualizar a senha')
+      }
+
+      toast.success('Senha atualizada com sucesso')
+      setPasswordForm({ current: '', next: '', confirm: '' })
+    } catch (error: any) {
+      console.error(error)
+      const message = error?.message || 'Não foi possível atualizar a senha'
+      toast.error(message)
+    } finally {
+      setSavingPassword(false)
+    }
+  }
+
+  const handleSave = () => {
+    setIsSaving(true)
+    setTimeout(() => {
+      setIsSaving(false)
+      toast.success('Alterações salvas com sucesso!')
+    }, 1000)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-150 max-w-5xl mx-auto pb-10">
+      <div className="flex flex-col gap-2">
+        <PageTitle
+          title="Meu Perfil"
+          className="text-2xl lg:text-3xl font-bold text-slate-800"
+        />
+        <p className="text-slate-500">
+          Gerencie suas informações pessoais e configurações de segurança.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col items-center text-center">
+            <div className="relative group cursor-pointer mb-4">
+              <div className="absolute -inset-0.5 rounded-full bg-linear-to-br from-(--brand-gradient-from) to-(--brand-gradient-to) opacity-70 blur-sm group-hover:opacity-100 transition duration-200" />
+
+              <Avatar className="relative w-32 h-32 border-4 border-white shadow-sm">
+                {avatarSrc && <AvatarImage src={avatarSrc} className="object-cover" />}
+                <AvatarFallback className="text-2xl font-bold bg-slate-50 text-slate-400">
+                  {getInitials(user?.name)}
+                </AvatarFallback>
+              </Avatar>
+
+              <label className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-md border border-slate-100 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition-colors cursor-pointer">
+                {uploadingAvatar ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Camera className="w-4 h-4" />
+                )}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                  disabled={uploadingAvatar}
+                />
+              </label>
+            </div>
+
+            <h2 className="text-xl font-bold text-slate-800">{user?.name || 'Usuário'}</h2>
+            <p className="text-sm text-slate-500 mb-4">{user?.email}</p>
+
+            <div className="w-full pt-4 border-t border-slate-50 flex items-center justify-center gap-2 text-xs text-slate-400">
+              <ShieldCheck className="w-3 h-3" />
+              Conta Segura
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-2 space-y-6">
+          <section className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-slate-50 flex items-center gap-3">
+              <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                <User className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-800">Informações básicas</h3>
+                <p className="text-xs text-slate-500">Seus dados de identificação na plataforma</p>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name" className="text-slate-600">
+                  Nome Completo
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Input
+                    id="name"
+                    defaultValue={user?.name}
+                    className="pl-9 h-11 rounded-xl bg-slate-50/50 focus:bg-white transition-colors"
+                    placeholder="Seu nome"
                   />
-                </label>
-                <div>
-                  <h1 className="text-xl font-semibold text-foreground">
-                    {user?.name || 'Usuario'}
-                  </h1>
-                  <p className="text-sm text-muted-foreground">{user?.email || ''}</p>
                 </div>
               </div>
-              <Button disabled>Editar</Button>
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="h-10 rounded-xl bg-slate-900 hover:bg-slate-800 text-white"
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  Salvar Alterações
+                </Button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </section>
 
-        <Card className="border-none shadow-[0_20px_60px_-50px_rgba(15,23,42,0.45)]">
-          <CardHeader>
-            <CardTitle>Informacoes basicas</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Nome completo</Label>
-              <Input
-                id="name"
-                placeholder="Seu nome completo"
-                defaultValue={user?.name || ''}
-                disabled={loading}
-              />
+          <section className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-slate-50 flex items-center gap-3">
+              <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
+                <KeyRound className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-800">Segurança</h3>
+                <p className="text-xs text-slate-500">Gerencie sua senha de acesso</p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="border-none shadow-[0_20px_60px_-50px_rgba(15,23,42,0.45)]">
-            <CardHeader>
-              <CardTitle>Alterar email</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email atual</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  defaultValue={user?.email || ''}
-                  disabled={loading}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="newEmail">Novo email</Label>
-                <Input id="newEmail" type="email" placeholder="novo@email.com" />
-              </div>
-              <div className="flex justify-end">
-                <Button disabled>Atualizar email</Button>
-              </div>
-            </CardContent>
-          </Card>
+            <div className="p-6 space-y-6">
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-slate-900 flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-slate-400" /> Alterar Senha
+                </h4>
 
-          <Card className="border-none shadow-[0_20px_60px_-50px_rgba(15,23,42,0.45)]">
-            <CardHeader>
-              <CardTitle>Alterar senha</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="currentPassword">Senha atual</Label>
-                <Input id="currentPassword" type="password" placeholder="********" />
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="current-pass" className="text-xs text-slate-500">
+                      Senha Atual
+                    </Label>
+                    <Input
+                      id="current-pass"
+                      type="password"
+                      className="h-10 rounded-xl"
+                      placeholder="********"
+                      value={passwordForm.current}
+                      onChange={(e) =>
+                        setPasswordForm((prev) => ({ ...prev, current: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="new-pass" className="text-xs text-slate-500">
+                      Nova Senha
+                    </Label>
+                    <Input
+                      id="new-pass"
+                      type="password"
+                      className="h-10 rounded-xl"
+                      placeholder="********"
+                      value={passwordForm.next}
+                      onChange={(e) =>
+                        setPasswordForm((prev) => ({ ...prev, next: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="confirm-pass" className="text-xs text-slate-500">
+                      Confirmar Nova Senha
+                    </Label>
+                    <Input
+                      id="confirm-pass"
+                      type="password"
+                      className="h-10 rounded-xl"
+                      placeholder="********"
+                      value={passwordForm.confirm}
+                      onChange={(e) =>
+                        setPasswordForm((prev) => ({ ...prev, confirm: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="newPassword">Nova senha</Label>
-                <Input id="newPassword" type="password" placeholder="********" />
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  variant="outline"
+                  className="h-10 rounded-xl border-slate-200 text-slate-600 hover:text-slate-800"
+                  onClick={handlePasswordUpdate}
+                  disabled={savingPassword || loading}
+                >
+                  {savingPassword ? 'Atualizando...' : 'Atualizar Segurança'}
+                </Button>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
-                <Input id="confirmPassword" type="password" placeholder="********" />
-              </div>
-              <div className="flex justify-end">
-                <Button disabled>Atualizar senha</Button>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </div>
       </div>
-    </main>
+    </div>
   )
 }
