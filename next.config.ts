@@ -23,6 +23,16 @@ const nextConfig: NextConfig = {
         port: '4457',
         pathname: '/uploads/**',
       },
+      {
+        protocol: 'http',
+        hostname: 'reforcoadrianaoliveira.edukconecta.com',
+        port: '4457',
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'reforcoadrianaoliveira.edukconecta.com',
+      },
     ],
   },
   allowedDevOrigins: [
@@ -31,6 +41,7 @@ const nextConfig: NextConfig = {
     '*.local-origin.dev',
     'localhost:3000',
     '192.168.15.9:3000',
+    '72.62.10.171'
   ],
 };
 
