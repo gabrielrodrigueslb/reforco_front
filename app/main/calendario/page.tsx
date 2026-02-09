@@ -48,11 +48,11 @@ import { cn } from '@/lib/utils'
 import PageTitle from '@/components/page-title'
 import { EventsService, CalendarEvent } from '@/services/events.service'
 
-const eventTypes = ['Aula Especial', 'ReuniÃ£o', 'Prova', 'Evento', 'Feriado', 'Outro'] as const
+const eventTypes = ['Aula Especial', 'Reunião', 'Prova', 'Evento', 'Feriado', 'Outro'] as const
 
 const eventColors: Record<string, string> = {
   'Aula Especial': '#6366f1',
-  ReuniÃ£o: '#f59e0b',
+  Reunião: '#f59e0b',
   Prova: '#ef4444',
   Evento: '#10b981',
   Feriado: '#8b5cf6',
@@ -77,7 +77,7 @@ export default function CalendarPage() {
           }))
         )
       )
-      .catch(() => toast.error('N??o foi poss??vel carregar eventos'));
+      .catch(() => toast.error('Não foi possível carregar eventos'));
   }, [currentMonth]);
 
 
@@ -131,7 +131,7 @@ export default function CalendarPage() {
 
   const handleSubmit = () => {
     if (!formData.title || !formData.event_type || !formData.date) {
-      toast.error('Preencha os campos obrigatÃ³rios')
+      toast.error('Preencha os campos obrigatórios')
       return
     }
 
@@ -153,7 +153,7 @@ export default function CalendarPage() {
           resetForm()
           toast.success('Evento atualizado!')
         })
-        .catch(() => toast.error('N??o foi poss??vel atualizar'))
+        .catch(() => toast.error('Não foi possível atualizar'))
       return
     }
 
@@ -172,7 +172,7 @@ export default function CalendarPage() {
         resetForm()
         toast.success('Evento criado!')
       })
-      .catch(() => toast.error('N??o foi poss??vel criar'))
+      .catch(() => toast.error('Não foi possível criar'))
   }
 
   const handleConfirmDelete = async () => {
@@ -429,7 +429,7 @@ export default function CalendarPage() {
 
           <div className="space-y-4 py-4">
             <div>
-              <Label className="text-slate-700 font-medium">TÃ­tulo *</Label>
+              <Label className="text-slate-700 font-medium">Tí­tulo *</Label>
               <Input
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -482,7 +482,7 @@ export default function CalendarPage() {
               </div>
 
               <div>
-                <Label className="text-slate-700 font-medium">TÃ©rmino</Label>
+                <Label className="text-slate-700 font-medium">Término</Label>
                 <Input
                   type="time"
                   value={formData.end_time}
@@ -493,7 +493,7 @@ export default function CalendarPage() {
             </div>
 
             <div>
-              <Label className="text-slate-700 font-medium">DescriÃ§Ã£o</Label>
+              <Label className="text-slate-700 font-medium">Descrição</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -519,7 +519,7 @@ export default function CalendarPage() {
       <AlertDialog open={!!deleteEvent} onOpenChange={() => setDeleteEvent(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusÃ£o</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja excluir o evento <strong>{deleteEvent?.title}</strong>?
             </AlertDialogDescription>
