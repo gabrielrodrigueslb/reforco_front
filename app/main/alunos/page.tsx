@@ -185,6 +185,9 @@ export default function Students() {
     difficulty: '',
   })
 
+  const [pageSize, setPageSize] = useState(15)
+  const [currentPage, setCurrentPage] = useState(1)
+
   // ===== NEW STUDENT STATES =====
   const [activeTab, setActiveTab] = useState('data')
   const [hasGuardian2, setHasGuardian2] = useState(false)
@@ -308,6 +311,24 @@ export default function Students() {
       return true
     })
   }, [students, filters])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters, pageSize])
+
+  const totalItems = filteredStudents.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const safePage = Math.min(currentPage, totalPages)
+  const startIndex = totalItems === 0 ? 0 : (safePage - 1) * pageSize
+  const endIndex = Math.min(startIndex + pageSize, totalItems)
+  const pagedStudents = useMemo(
+    () => filteredStudents.slice(startIndex, endIndex),
+    [filteredStudents, startIndex, endIndex]
+  )
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages)
+  }, [currentPage, totalPages])
 
   const handleDeleteStudent = useCallback(async () => {
     if (!deleteStudent) return
@@ -560,6 +581,54 @@ export default function Students() {
         </div>
       </div>
 
+      {/* Pagination */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <p className="text-sm text-slate-500">
+          {totalItems === 0
+            ? 'Nenhum aluno para exibir'
+            : `Mostrando ${startIndex + 1}-${endIndex} de ${totalItems} alunos`}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-500">Por página</span>
+            <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+              <SelectTrigger className="h-9 w-24 rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[15, 30, 50, 100].map((size) => (
+                  <SelectItem key={size} value={String(size)}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="h-9 rounded-xl"
+              disabled={safePage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              Anterior
+            </Button>
+            <span className="text-sm text-slate-500">
+              {safePage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              className="h-9 rounded-xl"
+              disabled={safePage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Próxima
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Students Display */}
       {isLoading ? (
         <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4' : 'space-y-2'}>
@@ -587,7 +656,7 @@ export default function Students() {
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredStudents.map((student) => {
+          {pagedStudents.map((student) => {
             const age = calculateAge(student.birth_date)
 
             return (
@@ -623,27 +692,22 @@ export default function Students() {
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="p-2 hover:bg-slate-100 rounded-xl transition-colors shrink-0">
+                      <button className="p-2 hover:bg-slate-100 rounded-xl transition-colors shrink-0 cursor-pointer">
                         <MoreVertical className="w-5 h-5 text-slate-400" />
                       </button>
                     </DropdownMenuTrigger>
 
                     <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem asChild>
-                        <Link href={createPageUrl(`${student.id}`)} className="flex items-center gap-2">
-                          <Eye className="w-4 h-4" />
+                        <Link href={createPageUrl(`${student.id}`)} className="flex items-center gap-2 cursor-pointer">
+                          <Eye className="w-4 h-4 " />
                           Ver Ficha
                         </Link>
                       </DropdownMenuItem>
 
-                      <DropdownMenuItem asChild>
-                        <Link href={createPageUrl(`Attendance?student=${student.id}`)} className="flex items-center gap-2">
-                          <CalendarCheck className="w-4 h-4" />
-                          Frequência
-                        </Link>
-                      </DropdownMenuItem>
+                      
 
-                      <DropdownMenuItem className="text-rose-600 focus:text-rose-600" onClick={() => setDeleteStudent(student)}>
+                      <DropdownMenuItem className="text-rose-600 focus:text-rose-600 cursor-pointer" onClick={() => setDeleteStudent(student)}>
                         <Trash2 className="w-4 h-4 mr-2" />
                         Excluir
                       </DropdownMenuItem>
@@ -694,7 +758,7 @@ export default function Students() {
             </TableHeader>
 
             <TableBody>
-              {filteredStudents.map((student) => {
+              {pagedStudents.map((student) => {
                 const age = calculateAge(student.birth_date)
 
                 return (

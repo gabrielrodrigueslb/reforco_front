@@ -119,6 +119,10 @@ export default function StudentProfile() {
   const [isDownloading, setIsDownloading] = useState(false); // Novo estado para feedback visual
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [attendanceSearch, setAttendanceSearch] = useState('');
+  const [attendancePageSize, setAttendancePageSize] = useState(10);
+  const [attendancePage, setAttendancePage] = useState(1);
+
   useEffect(() => {
     if (!studentId) {
       setIsLoading(false);
@@ -177,6 +181,37 @@ export default function StudentProfile() {
     justified: attendanceRecords.filter((a) => a.status === 'Justificado')
       .length,
   };
+
+  const attendanceSorted = React.useMemo(
+    () =>
+      [...attendanceRecords].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      ),
+    [attendanceRecords],
+  );
+
+  const attendanceFiltered = React.useMemo(() => {
+    if (!attendanceSearch) return attendanceSorted;
+    return attendanceSorted.filter((record) => record.date === attendanceSearch);
+  }, [attendanceSearch, attendanceSorted]);
+
+  React.useEffect(() => {
+    setAttendancePage(1);
+  }, [attendanceSearch, attendancePageSize]);
+
+  const attendanceTotal = attendanceFiltered.length;
+  const attendancePages = Math.max(1, Math.ceil(attendanceTotal / attendancePageSize));
+  const attendanceSafePage = Math.min(attendancePage, attendancePages);
+  const attendanceStart = attendanceTotal === 0 ? 0 : (attendanceSafePage - 1) * attendancePageSize;
+  const attendanceEnd = Math.min(attendanceStart + attendancePageSize, attendanceTotal);
+  const attendancePageItems = React.useMemo(
+    () => attendanceFiltered.slice(attendanceStart, attendanceEnd),
+    [attendanceFiltered, attendanceStart, attendanceEnd],
+  );
+
+  React.useEffect(() => {
+    if (attendancePage > attendancePages) setAttendancePage(attendancePages);
+  }, [attendancePage, attendancePages]);
 
   const attendanceRate =
     attendanceStats.total > 0
@@ -855,6 +890,130 @@ export default function StudentProfile() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Attendance Details */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+          <div>
+            <h3 className="font-semibold text-slate-800 text-lg">Chamadas do aluno</h3>
+            <p className="text-sm text-slate-500">
+              Registro diário de presença, faltas e justificativas.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={attendanceSearch}
+                onChange={(e) => setAttendanceSearch(e.target.value)}
+                className="h-10 rounded-xl"
+              />
+              {attendanceSearch ? (
+                <Button
+                  variant="outline"
+                  className="h-10 rounded-xl"
+                  onClick={() => setAttendanceSearch('')}
+                >
+                  Limpar
+                </Button>
+              ) : null}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-500">Por página</span>
+              <Select
+                value={String(attendancePageSize)}
+                onValueChange={(value) => setAttendancePageSize(Number(value))}
+              >
+                <SelectTrigger className="h-10 w-24 rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 20, 30, 50].map((size) => (
+                    <SelectItem key={size} value={String(size)}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <p className="text-sm text-slate-500">
+            {attendanceTotal === 0
+              ? 'Nenhuma chamada registrada'
+              : `Mostrando ${attendanceStart + 1}-${attendanceEnd} de ${attendanceTotal}`}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="h-9 rounded-xl"
+              disabled={attendanceSafePage <= 1}
+              onClick={() => setAttendancePage((p) => Math.max(1, p - 1))}
+            >
+              Anterior
+            </Button>
+            <span className="text-sm text-slate-500">
+              {attendanceSafePage} / {attendancePages}
+            </span>
+            <Button
+              variant="outline"
+              className="h-9 rounded-xl"
+              disabled={attendanceSafePage >= attendancePages}
+              onClick={() =>
+                setAttendancePage((p) => Math.min(attendancePages, p + 1))
+              }
+            >
+              Próxima
+            </Button>
+          </div>
+        </div>
+
+        {attendanceTotal === 0 ? (
+          <div className="rounded-xl border border-dashed p-6 text-center text-slate-500">
+            Nenhum registro encontrado para o período.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {attendancePageItems.map((record) => {
+              const statusClass =
+                record.status === 'Presente'
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : record.status === 'Ausente'
+                    ? 'bg-rose-100 text-rose-700'
+                    : 'bg-amber-100 text-amber-700'
+              return (
+                <div
+                  key={record.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-4"
+                >
+                  <div>
+                    <p className="font-semibold text-slate-800">
+                      {record.date
+                        ? format(new Date(`${record.date}T12:00:00`), 'dd/MM/yyyy', {
+                            locale: ptBR,
+                          })
+                        : '-'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {record.shift ? `Turno: ${record.shift}` : 'Turno não informado'}
+                    </p>
+                    {record.justification ? (
+                      <p className="text-xs text-slate-500 mt-1">
+                        Justificativa: {record.justification}
+                      </p>
+                    ) : null}
+                  </div>
+                  <Badge className={statusClass}>{record.status}</Badge>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
       </div>
       {/* Modal de nota */}
