@@ -6,6 +6,5 @@ export const api = axios.create({
   timeout: 10000,
   headers: {
     'x-api-key': process.env.NEXT_PUBLIC_API_KEY,
-    'Content-Type': 'application/json',
   },
 });

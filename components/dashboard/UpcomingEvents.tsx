@@ -69,7 +69,16 @@ export default function UpcomingEvents({
             return (
               <div
                 key={event.id}
-                className="flex items-center gap-4 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
+                role="button"
+                tabIndex={0}
+                onClick={() => (window.location.href = `/main/calendario`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    window.location.href = `/main/calendario`
+                  }
+                }}
+                className="flex items-center gap-4 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <div
                   className="w-1 h-12 rounded-full"

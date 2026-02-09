@@ -124,19 +124,6 @@ type StudentData = {
   performance_indicator: string
 }
 
-type ImportedStudent = {
-  id: string
-  full_name: string
-  birth_date?: string
-  grade?: string
-  shift?: string
-  origin_school?: string
-  status: 'Ativo' | 'Inativo'
-  performance_indicator: string
-  difficulty_subjects: string[]
-  created_at?: string
-}
-
 type Filters = {
   search: string
   grade: string
@@ -173,6 +160,12 @@ function calculateAge(birthDate: string) {
   const monthDiff = today.getMonth() - birth.getMonth()
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--
   return age
+}
+
+function sortStudentsByName(list: Student[]) {
+  return [...list].sort((a, b) =>
+    (a.full_name || '').localeCompare(b.full_name || '', 'pt-BR', { sensitivity: 'base' })
+  )
 }
 
 export default function Students() {
@@ -293,7 +286,7 @@ export default function Students() {
     setIsLoading(true)
     try {
       const data = await StudentsService.list()
-      setStudents(data as Student[])
+      setStudents(sortStudentsByName(data as Student[]))
     } catch {
       toast.error('Não foi possí­vel carregar alunos')
     } finally {
@@ -373,7 +366,7 @@ export default function Students() {
       }
 
       const newStudent = (await StudentsService.create(payload)) as StudentResponse
-      setStudents((prev) => [newStudent as Student, ...prev])
+      setStudents((prev) => sortStudentsByName([newStudent as Student, ...prev]))
       toast.success('Aluno cadastrado com sucesso!')
       setShowNewModal(false)
       resetNewForm()
@@ -431,7 +424,7 @@ export default function Students() {
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
         <div className="p-4 sm:p-5 space-y-4">
           {/* Search */}
-          <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+          <div className="flex flex-row lg:flex-row lg:items-center gap-3">
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <Input
@@ -474,19 +467,19 @@ export default function Students() {
                 </button>
               </div>
 
+            </div>
+          </div>
               {hasAnyFilter && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={clearFilters}
-                  className="h-10 rounded-xl"
+                  className="h-10 rounded-xl w-full"
                 >
                   <X className="w-4 h-4 mr-2" />
                   Limpar
                 </Button>
               )}
-            </div>
-          </div>
 
           {/* Selects */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -802,30 +795,8 @@ export default function Students() {
         open={showImportModal}
         onOpenChange={setShowImportModal}
         templateHref="/templates/Modelo_Importacao_Alunos.xlsx"
-        onImported={(newStudents: ImportedStudent[]) => {
-          const normalized = newStudents.map((s) => ({
-            id: s.id,
-            full_name: s.full_name,
-            birth_date: s.birth_date || '',
-            grade: s.grade || '',
-            shift: s.shift || '',
-            status: s.status,
-            performance_indicator: s.performance_indicator || 'Não avaliado',
-            difficulty_subjects: s.difficulty_subjects || [],
-            origin_school: s.origin_school || '',
-            cpf: '',
-            address: '',
-            allergies: '',
-            blood_type: 'Não informado',
-            medical_reports: '',
-            medications: '',
-            behavior_notes: '',
-            difficulty_reaction: '',
-            previous_tutoring: null,
-            guardians: [],
-            created_at: s.created_at,
-          }))
-          setStudents((prev) => [...normalized, ...prev])
+        onImported={(newStudents: StudentResponse[]) => {
+          setStudents((prev) => sortStudentsByName([...(newStudents as Student[]), ...prev]))
           toast.success('Alunos importados com sucesso!')
         }}
       />

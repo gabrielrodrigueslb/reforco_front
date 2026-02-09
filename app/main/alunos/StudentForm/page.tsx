@@ -35,6 +35,7 @@ type StudentFormData = {
   medical_reports: string
   medications: string
   behavior_notes: string
+  difficulty_subjects: string[]
   difficulty_reaction: string
   previous_tutoring: null | boolean
   performance_indicator: string
@@ -64,6 +65,33 @@ function formatCPF(value: string) {
     .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
 }
 
+function normalizeText(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, '')
+}
+
+function mapGradeValue(value: string) {
+  if (!value) return ''
+  const mapped = grades.find((g) => normalizeText(g) === normalizeText(value))
+  return mapped || value
+}
+
+function mapBloodTypeValue(value: string) {
+  if (!value) return ''
+  const mapped = bloodTypes.find((b) => normalizeText(b) === normalizeText(value))
+  return mapped || value
+}
+
+function parseSubjects(value: string) {
+  return value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
 function calculateAge(birthDate: string) {
   if (!birthDate) return null
   const today = new Date()
@@ -84,7 +112,7 @@ export default function StudentFormPage() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [photoFile, setPhotoFile] = useState<File | null>(null)
-  const [photoUrl, setPhotoUrl] = useState<string>('/aluno.jpg')
+  const [photoUrl, setPhotoUrl] = useState<string>('/astronautaconfuso.png')
   const [initialForm, setInitialForm] = useState<StudentFormData | null>(null)
 
   const [form, setForm] = useState<StudentFormData>({
@@ -101,6 +129,7 @@ export default function StudentFormPage() {
     medical_reports: '',
     medications: '',
     behavior_notes: '',
+    difficulty_subjects: [],
     difficulty_reaction: '',
     previous_tutoring: null,
     performance_indicator: 'Não avaliado',
@@ -117,24 +146,25 @@ export default function StudentFormPage() {
         const loadedForm: StudentFormData = {
           full_name: data.full_name || '',
           birth_date: toDateOnly(data.birth_date),
-          grade: data.grade || '',
+          grade: mapGradeValue(data.grade || ''),
           shift: data.shift || '',
           status: data.status || 'Ativo',
           origin_school: data.origin_school || '',
           cpf: data.cpf || '',
           address: data.address || '',
           allergies: data.allergies || '',
-          blood_type: data.blood_type || 'Não informado',
+          blood_type: mapBloodTypeValue(data.blood_type || 'Não informado'),
           medical_reports: data.medical_reports || '',
           medications: data.medications || '',
           behavior_notes: data.behavior_notes || '',
+          difficulty_subjects: data.difficulty_subjects || [],
           difficulty_reaction: data.difficulty_reaction || '',
           previous_tutoring: data.previous_tutoring ?? null,
           performance_indicator: data.performance_indicator || 'Não avaliado',
         }
         setForm(loadedForm)
         setInitialForm(loadedForm)
-        setPhotoUrl(data.foto_aluno || '/aluno.jpg')
+        setPhotoUrl(data.foto_aluno || '/astronautaconfuso.png')
       })
       .catch(() => {
         toast.error('Não foi possível carregar o aluno')
@@ -146,9 +176,19 @@ export default function StudentFormPage() {
 
   const photoPreview = useMemo(() => {
     if (photoFile) return URL.createObjectURL(photoFile)
-    return photoUrl || '/aluno.jpg'
+    return photoUrl || ''
   }, [photoFile, photoUrl])
   const age = useMemo(() => calculateAge(form.birth_date), [form.birth_date])
+  const gradeOptions = useMemo(() => {
+    if (!form.grade) return grades
+    return grades.includes(form.grade) ? grades : [form.grade, ...grades]
+  }, [form.grade])
+  const bloodTypeOptions = useMemo(() => {
+    if (!form.blood_type) return bloodTypes
+    return bloodTypes.includes(form.blood_type)
+      ? bloodTypes
+      : [form.blood_type, ...bloodTypes]
+  }, [form.blood_type])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null
@@ -196,6 +236,7 @@ export default function StudentFormPage() {
           medical_reports: changes.medical_reports,
           medications: changes.medications,
           behavior_notes: changes.behavior_notes,
+          difficulty_subjects: changes.difficulty_subjects,
           difficulty_reaction: changes.difficulty_reaction,
           previous_tutoring: changes.previous_tutoring,
           performance_indicator: changes.performance_indicator,
@@ -206,7 +247,7 @@ export default function StudentFormPage() {
       if (photoFile) {
         setUploading(true)
         const updated = await StudentsService.uploadPhoto(id, photoFile)
-        setPhotoUrl(updated.foto_aluno || '/aluno.jpg')
+        setPhotoUrl(updated.foto_aluno || '/astronautaconfuso.png')
         setPhotoFile(null)
         setUploading(false)
       }
@@ -330,18 +371,18 @@ export default function StudentFormPage() {
               type="date"
               value={form.birth_date}
               onChange={(e) => setForm({ ...form, birth_date: e.target.value })}
-              className="mt-2 h-11"
+              className="mt-2 h-11 rounded-xl"
             />
           </div>
 
           <div>
             <Label>Série *</Label>
             <Select value={form.grade} onValueChange={(v) => setForm({ ...form, grade: v })}>
-              <SelectTrigger className="mt-2 h-11 w-full">
+              <SelectTrigger className="mt-2 h-11 w-full rounded-xl">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
-                {grades.map((g) => (
+                {gradeOptions.map((g) => (
                   <SelectItem key={g} value={g}>{g}</SelectItem>
                 ))}
               </SelectContent>
@@ -351,7 +392,7 @@ export default function StudentFormPage() {
           <div>
             <Label>Turno *</Label>
             <Select value={form.shift} onValueChange={(v) => setForm({ ...form, shift: v })}>
-              <SelectTrigger className="mt-2 h-11 w-full">
+              <SelectTrigger className="mt-2 h-11 w-full rounded-xl">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -418,7 +459,7 @@ export default function StudentFormPage() {
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
-                {bloodTypes.map((b) => (
+                {bloodTypeOptions.map((b) => (
                   <SelectItem key={b} value={b}>{b}</SelectItem>
                 ))}
               </SelectContent>
@@ -475,6 +516,21 @@ export default function StudentFormPage() {
           Informações Pedagógicas
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <Label>Matérias com dificuldade</Label>
+            <Input
+              value={form.difficulty_subjects.join(', ')}
+              onChange={(e) =>
+                setForm({ ...form, difficulty_subjects: parseSubjects(e.target.value) })
+              }
+              className="mt-2 h-11 rounded-xl"
+              placeholder="Ex.: Matemática, Português, Ciências"
+            />
+            <p className="text-xs text-slate-500 mt-2">
+              Separe as matérias por vírgula.
+            </p>
+          </div>
+
           <div className="md:col-span-2">
             <Label>Reação às dificuldades</Label>
             <Textarea

@@ -49,19 +49,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import PageTitle from '@/components/page-title'
 
-const grades = [
-  '1º Ano','2º Ano','3º Ano','4º Ano','5º Ano',
-  '6º Ano','7º Ano','8º Ano','9º Ano',
-  '1º EM','2º EM','3º EM',
-]
-
 const shifts = ['Manhã', 'Tarde']
 const weekDays = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
 
 type ClassItem = {
   id: string
   name: string
-  grade: string
   shift: string
   days_of_week: string[]
   start_time?: string
@@ -92,7 +85,6 @@ export default function TurmasPage() {
 
   const [formData, setFormData] = useState({
     name: '',
-    grade: '',
     shift: '',
     days_of_week: [] as string[],
     start_time: '',
@@ -134,7 +126,6 @@ export default function TurmasPage() {
   const resetForm = () => {
     setFormData({
       name: '',
-      grade: '',
       shift: '',
       days_of_week: [],
       start_time: '',
@@ -149,7 +140,6 @@ export default function TurmasPage() {
     setEditingClass(item)
     setFormData({
       name: item.name ?? '',
-      grade: item.grade ?? '',
       shift: item.shift ?? '',
       days_of_week: item.days_of_week ?? [],
       start_time: item.start_time ?? '',
@@ -170,7 +160,7 @@ export default function TurmasPage() {
   }
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.grade || !formData.shift) {
+    if (!formData.name || !formData.shift) {
       toast.error('Preencha os campos obrigatórios')
       return
     }
@@ -319,7 +309,6 @@ export default function TurmasPage() {
                 </Link>
 
                 <div className="flex flex-wrap gap-2 mb-4">
-                  <Badge variant="outline">{classItem.grade}</Badge>
                   <Badge
                     className={cn(
                       classItem.shift === 'Manhã'
@@ -388,44 +377,23 @@ export default function TurmasPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-slate-700 font-medium">Série *</Label>
-                <Select
-                  value={formData.grade}
-                  onValueChange={(value) => setFormData({ ...formData, grade: value })}
-                >
-                  <SelectTrigger className="mt-2 h-12 rounded-xl w-full">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {grades.map((g) => (
-                      <SelectItem key={g} value={g}>
-                        {g}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-slate-700 font-medium">Turno *</Label>
-                <Select
-                  value={formData.shift}
-                  onValueChange={(value) => setFormData({ ...formData, shift: value })}
-                >
-                  <SelectTrigger className="mt-2 h-12 rounded-xl w-full">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {shifts.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <Label className="text-slate-700 font-medium">Turno *</Label>
+              <Select
+                value={formData.shift}
+                onValueChange={(value) => setFormData({ ...formData, shift: value })}
+              >
+                <SelectTrigger className="mt-2 h-12 rounded-xl w-full">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {shifts.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

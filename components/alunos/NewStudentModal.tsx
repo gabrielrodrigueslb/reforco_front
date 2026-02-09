@@ -372,14 +372,14 @@ export default function NewStudentModal({
 
                       <div className="md:col-span-2 xl:col-span-3 space-y-2">
                         <Label className="text-sm font-medium">
-                          EndereÃ§o do aluno <span className="text-destructive">*</span>
+                          Endereço do aluno <span className="text-destructive">*</span>
                         </Label>
                         <Input
                           value={studentData.address}
                           onChange={(e) =>
                             setStudentData({ ...studentData, address: e.target.value })
                           }
-                          placeholder="Rua, nÃºmero, bairro, cidade"
+                          placeholder="Rua, número, bairro, cidade"
                           className="h-11"
                         />
                       </div>

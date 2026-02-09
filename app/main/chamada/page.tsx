@@ -784,7 +784,7 @@ export default function Attendance() {
               )}
 
               <Select value={selectedShift} onValueChange={setSelectedShift}>
-                <SelectTrigger className="w-full sm:w-32">
+                <SelectTrigger className="w-full sm:w-32 cursor-pointer">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -828,7 +828,7 @@ export default function Attendance() {
                         setSelectedDate(dayStr);
                       }}
                       className={cn(
-                        'h-9 sm:h-11 md:h-12 rounded-lg border border-transparent flex items-center justify-center text-sm transition-all',
+                        'h-9 sm:h-11 md:h-20 rounded-lg border border-transparent flex items-center justify-center text-sm transition-all cursor-pointer',
                         isSelected
                           ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
                           : 'hover:bg-slate-50',

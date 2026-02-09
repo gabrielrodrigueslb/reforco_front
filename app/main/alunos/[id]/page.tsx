@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
@@ -20,12 +20,19 @@ import {
   User,
   Clock,
   Plus,
+  FileText,
+  Download,
+  Eye,
+  Upload,
+  Trash2,
+  MoreVertical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -40,54 +47,78 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import PageTitle from '@/components/page-title';
 import { toast } from 'sonner';
 import { StudentsService, StudentResponse } from '@/services/students.service';
 import { AttendanceService, AttendanceRecord } from '@/services/attendance.service';
+import { GradesService, GradeRecord } from '@/services/grades.service';
+import { StudentDocumentsService, StudentDocument } from '@/services/student-documents.service';
 
-// --- FUNÇÃO AUXILIAR DE URL ---
 const createPageUrl = (path: string) => {
   return `/main/alunos/${path}`;
 };
 
-// --- DADOS MOCKADOS ---
-type GradeRecord = {
-  id: string;
-  student_id: string;
-  subject: string;
-  bimester: 1 | 2 | 3 | 4;
-  grade: number;
-};
+const onlyDigits = (value: string) => value.replace(/\D/g, '');
 
-const MOCK_GRADES: GradeRecord[] = [
-  { id: 'g1', student_id: '1', subject: 'Português', bimester: 1, grade: 8.5 },
-  { id: 'g2', student_id: '1', subject: 'Português', bimester: 2, grade: 7.8 },
-  { id: 'g3', student_id: '1', subject: 'Matemática', bimester: 1, grade: 6.9 },
-  { id: 'g4', student_id: '1', subject: 'Matemática', bimester: 2, grade: 7.4 },
-  { id: 'g5', student_id: '2', subject: 'Português', bimester: 1, grade: 6.2 },
-  { id: 'g6', student_id: '2', subject: 'História', bimester: 1, grade: 8.0 },
-];
+const formatCPF = (value?: string) => {
+  if (!value) return '-';
+  const v = onlyDigits(value).slice(0, 11);
+  return v
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+};
 
 export default function StudentProfile() {
   const router = useRouter();
-  const params = useParams(); // Captura o ID da URL (ex: alunos/1)
+  const params = useParams();
   const studentId = params?.id as string;
 
   const [isLoading, setIsLoading] = useState(true);
   const [student, setStudent] = useState<StudentResponse | null>(null);
   const [guardians, setGuardians] = useState<any[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
-  const [grades, setGrades] = useState<GradeRecord[]>(MOCK_GRADES);
+  const [grades, setGrades] = useState<GradeRecord[]>([]);
   const [openGradeModal, setOpenGradeModal] = useState(false);
+  const [isSavingGrade, setIsSavingGrade] = useState(false);
   const [gradeForm, setGradeForm] = useState({
     subject: '',
     bimester: '1',
     grade: '',
   });
+  const [documents, setDocuments] = useState<StudentDocument[]>([]);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [openDocumentModal, setOpenDocumentModal] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<StudentDocument | null>(null);
+  const [documentForm, setDocumentForm] = useState({
+    name: '',
+    type: 'OUTRO',
+    year: '',
+    notes: '',
+    file: null as File | null,
+  });
+  const [isDownloading, setIsDownloading] = useState(false); // Novo estado para feedback visual
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Busca dados do aluno na API
   useEffect(() => {
     if (!studentId) {
       setIsLoading(false);
@@ -99,16 +130,25 @@ export default function StudentProfile() {
       StudentsService.getById(studentId),
       AttendanceService.listByAluno(studentId),
     ])
-      .then(([data, attendance]) => {
+      .then(async ([data, attendance]) => {
         setStudent(data);
         setGuardians(data.guardians || []);
         setAttendanceRecords(attendance || []);
+
+        const [gradeList, docs] = await Promise.all([
+          GradesService.listByAluno(studentId).catch(() => []),
+          StudentDocumentsService.listByAluno(studentId).catch(() => []),
+        ]);
+        setGrades(gradeList || []);
+        setDocuments(docs || []);
       })
       .catch(() => {
-        toast.error('Não foi possÃ­vel carregar o aluno');
+        toast.error('Não foi possível carregar o aluno');
         setStudent(null);
         setGuardians([]);
         setAttendanceRecords([]);
+        setGrades([]);
+        setDocuments([]);
       })
       .finally(() => {
         setIsLoading(false);
@@ -158,6 +198,37 @@ export default function StudentProfile() {
     },
   };
 
+  // --- NOVA FUNÇÃO DE DOWNLOAD FORÇADO ---
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      setIsDownloading(true);
+      toast.info('Iniciando download...');
+
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Falha ao baixar arquivo');
+      
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename; // Isso força o download com o nome correto
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success('Download concluído!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Erro ao baixar. O arquivo será aberto na guia.');
+      // Fallback: abre em nova aba se o fetch falhar (ex: CORS)
+      window.open(url, '_blank');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6 max-w-4xl mx-auto p-6">
@@ -197,28 +268,105 @@ export default function StudentProfile() {
     ? (studentGrades.reduce((sum, g) => sum + g.grade, 0) / studentGrades.length).toFixed(1)
     : '--';
 
-  const handleAddGrade = () => {
+  const handleAddGrade = async () => {
+    if (!studentId || isSavingGrade) return;
     const gradeValue = Number(gradeForm.grade);
     if (!gradeForm.subject.trim() || !Number.isFinite(gradeValue)) {
       toast.error('Preencha disciplina e nota.');
       return;
     }
-    const newGrade: GradeRecord = {
-      id: Math.random().toString(36).slice(2, 9),
-      student_id: student.id,
-      subject: gradeForm.subject.trim(),
-      bimester: Number(gradeForm.bimester) as 1 | 2 | 3 | 4,
-      grade: gradeValue,
-    };
-    setGrades((prev) => [newGrade, ...prev]);
-    setGradeForm({ subject: '', bimester: '1', grade: '' });
-    setOpenGradeModal(false);
-    toast.success('Nota adicionada.');
+
+    setIsSavingGrade(true);
+    try {
+      const newGrade = await GradesService.create(studentId, {
+        subject: gradeForm.subject.trim(),
+        bimester: Number(gradeForm.bimester),
+        grade: gradeValue,
+      });
+      setGrades((prev) => [newGrade, ...prev]);
+      setGradeForm({ subject: '', bimester: '1', grade: '' });
+      setOpenGradeModal(false);
+      toast.success('Nota adicionada.');
+    } catch {
+      toast.error('Erro ao salvar nota.');
+    } finally {
+      setIsSavingGrade(false);
+    }
+  };
+
+  const documentTypes = [
+    { value: 'BOLETIM', label: 'Boletim' },
+    { value: 'LAUDO', label: 'Laudo' },
+    { value: 'AUTORIZACAO', label: 'Autorização' },
+    { value: 'DECLARACAO', label: 'Declaração' },
+    { value: 'MATRICULA', label: 'Matrícula' },
+    { value: 'HISTORICO_ESCOLAR', label: 'Histórico Escolar' },
+    { value: 'OUTRO', label: 'Outro' },
+  ];
+
+  const handleDocumentFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setDocumentForm((prev) => ({
+      ...prev,
+      file,
+      name: prev.name || file.name,
+    }));
+  };
+
+  const handleUploadDocument = async () => {
+    if (!studentId || isUploadingDocument) return;
+    if (!documentForm.file) {
+      toast.error('Selecione um arquivo para anexar.');
+      return;
+    }
+
+    setIsUploadingDocument(true);
+    try {
+      const uploaded = await StudentDocumentsService.upload(studentId, {
+        file: documentForm.file,
+        name: documentForm.name || documentForm.file.name,
+        type: documentForm.type,
+        year: documentForm.year,
+        notes: documentForm.notes,
+      });
+      setDocuments((prev) => [uploaded, ...prev]);
+      resetDocumentForm();
+      setOpenDocumentModal(false);
+      toast.success('Documento anexado.');
+    } catch {
+      toast.error('Erro ao anexar documento.');
+    } finally {
+      setIsUploadingDocument(false);
+    }
+  };
+
+  const resetDocumentForm = () => {
+    setDocumentForm({ name: '', type: 'OUTRO', year: '', notes: '', file: null });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleOpenDocumentModal = () => {
+    resetDocumentForm();
+    setOpenDocumentModal(true);
+  };
+
+  const handleRemoveDocument = async () => {
+    if (!studentId || !documentToDelete) return;
+    try {
+      await StudentDocumentsService.remove(studentId, documentToDelete.id);
+      setDocuments((prev) => prev.filter((doc) => doc.id !== documentToDelete.id));
+      toast.success('Documento removido.');
+    } catch {
+      toast.error('Erro ao remover documento.');
+    } finally {
+      setDocumentToDelete(null);
+    }
   };
 
   return (
     <>
-      <div className="space-y-6 max-w-4xl mx-auto p-4 sm:p-6 ">
+      <div className="space-y-6 max-w-4xl mx-auto p-1 sm:p-6 ">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -405,7 +553,95 @@ export default function StudentProfile() {
         )}
       </div>
 
-      {/* Details Grid */}
+      {/* Documentos do aluno (ALTERADO) */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-800">Documentos do Aluno</h3>
+            <p className="text-sm text-slate-500">
+              Mostrando apenas documentos fixados na ficha do aluno.
+            </p>
+          </div>
+          <Button
+            onClick={handleOpenDocumentModal}
+            className="bg-linear-to-r from-(--brand-gradient-from) to-[var(--brand-gradient-to)] text-white"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Anexar documento
+          </Button>
+        </div>
+
+        <div className="mt-6 space-y-3">
+          {documents.length === 0 ? (
+            <div className="rounded-xl border border-dashed p-6 text-center text-slate-500">
+              Nenhum documento fixado para este aluno.
+            </div>
+          ) : (
+            documents.map((doc) => (
+              <div
+                key={doc.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-4"
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center border shrink-0">
+                    <FileText className="w-5 h-5 text-slate-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-slate-800 truncate" title={doc.name}>
+                      {doc.name}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1 truncate">
+                      {doc.type}
+                      {doc.year ? ` • ${doc.year}` : ''}
+                      {doc.created_at
+                        ? ` • ${format(new Date(doc.created_at), "dd/MM/yyyy", { locale: ptBR })}`
+                        : ''}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Dropdown Menu com Download Forçado */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500">
+                      <MoreVertical className="w-4 h-4" />
+                      <span className="sr-only">Ações</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <a href={doc.url} target="_blank" rel="noreferrer" className="cursor-pointer">
+                        <Eye className="w-4 h-4 mr-2 text-slate-500" />
+                        Visualizar
+                      </a>
+                    </DropdownMenuItem>
+                    
+                    {/* Botão de Download com lógica fetch/blob */}
+                    <DropdownMenuItem 
+                      onClick={() => handleDownload(doc.url, doc.name)}
+                      disabled={isDownloading}
+                      className="cursor-pointer"
+                    >
+                      <Download className="w-4 h-4 mr-2 text-slate-500" />
+                      Baixar
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      className="text-rose-600 focus:text-rose-600 cursor-pointer"
+                      onClick={() => setDocumentToDelete(doc)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Remover
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Details Grid (O restante do código permanece igual) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Personal Info */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 h-full">
@@ -424,6 +660,18 @@ export default function StudentProfile() {
                       { locale: ptBR },
                     )
                   : '-'}
+              </p>
+            </div>
+            <div className="pt-4">
+              <p className="text-sm text-slate-500 mb-1">CPF</p>
+              <p className="font-medium text-slate-800">
+                {formatCPF(student.cpf)}
+              </p>
+            </div>
+            <div className="pt-4">
+              <p className="text-sm text-slate-500 mb-1">Endereço</p>
+              <p className="font-medium text-slate-800">
+                {student.address || '-'}
               </p>
             </div>
             <div className="pt-4">
@@ -485,6 +733,10 @@ export default function StudentProfile() {
                 </div>
                 <div className="space-y-2 text-sm">
                   <p className="flex items-center gap-2 text-slate-600">
+                    <FileText className="w-4 h-4 text-slate-400" />
+                    {guardian.cpf ? formatCPF(guardian.cpf) : '-'}
+                  </p>
+                  <p className="flex items-center gap-2 text-slate-600">
                     <Phone className="w-4 h-4 text-slate-400" />
                     {guardian.phone}
                   </p>
@@ -494,6 +746,10 @@ export default function StudentProfile() {
                       {guardian.email}
                     </p>
                   )}
+                  <p className="flex items-center gap-2 text-slate-600">
+                    <MapPin className="w-4 h-4 text-slate-400" />
+                    {guardian.address || '-'}
+                  </p>
                 </div>
               </div>
             ))}
@@ -541,6 +797,14 @@ export default function StudentProfile() {
               </p>
               <p className="font-medium text-slate-800">
                 {student.difficulty_reaction || '-'}
+              </p>
+            </div>
+            <div className="pt-4">
+              <p className="text-sm text-slate-500 mb-1">
+                Observações de comportamento
+              </p>
+              <p className="font-medium text-slate-800">
+                {student.behavior_notes || '-'}
               </p>
             </div>
             <div className="pt-4">
@@ -647,12 +911,116 @@ export default function StudentProfile() {
             <Button
               onClick={handleAddGrade}
               className="bg-linear-to-r from-(--brand-gradient-from) to-[var(--brand-gradient-to)] text-white"
+              disabled={isSavingGrade}
             >
-              Salvar
+              {isSavingGrade ? 'Salvando...' : 'Salvar'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de documento */}
+      <Dialog open={openDocumentModal} onOpenChange={setOpenDocumentModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Anexar documento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Nome do documento</Label>
+              <Input
+                value={documentForm.name}
+                onChange={(e) => setDocumentForm((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="Ex.: Autorização de saída"
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tipo</Label>
+              <Select
+                value={documentForm.type}
+                onValueChange={(value) => setDocumentForm((prev) => ({ ...prev, type: value }))}
+              >
+                <SelectTrigger className="h-11 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {documentTypes.map((doc) => (
+                    <SelectItem key={doc.value} value={doc.value}>
+                      {doc.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Ano letivo (opcional)</Label>
+              <Input
+                type="number"
+                value={documentForm.year}
+                onChange={(e) => setDocumentForm((prev) => ({ ...prev, year: e.target.value }))}
+                placeholder="2026"
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Arquivo *</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleDocumentFileChange}
+                className="h-11 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+              />
+              {documentForm.file?.name ? (
+                <p className="text-xs text-slate-500">Selecionado: {documentForm.file.name}</p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Observação</Label>
+              <Textarea
+                value={documentForm.notes}
+                onChange={(e) => setDocumentForm((prev) => ({ ...prev, notes: e.target.value }))}
+                className="min-h-24"
+                placeholder="Ex.: entregue pelos pais, válido até..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenDocumentModal(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleUploadDocument}
+              disabled={isUploadingDocument}
+              className="bg-linear-to-r from-(--brand-gradient-from) to-[var(--brand-gradient-to)] text-white"
+            >
+              {isUploadingDocument ? 'Enviando...' : 'Anexar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmação de remoção de documento */}
+      <AlertDialog open={!!documentToDelete} onOpenChange={() => setDocumentToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover documento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não poderá ser desfeita. O arquivo será excluído do registro do aluno.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-rose-500 hover:bg-rose-600" onClick={handleRemoveDocument}>
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

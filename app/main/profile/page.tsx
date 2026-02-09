@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { getSession } from '@/lib/auth'
+import { api } from '@/lib/api'
+import { toast } from 'sonner'
 
 interface User {
   id?: string
@@ -25,6 +27,8 @@ function getInitials(name?: string) {
 export default function Page() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadSession() {
@@ -42,7 +46,37 @@ export default function Page() {
   }, [])
 
   const baseUrl = process.env.NEXT_PUBLIC_URLBASE_UPLOAD || 'http://localhost:4457'
-  const avatarSrc = user?.avatarUrl ? `${baseUrl}${user.avatarUrl}` : undefined
+  const resolvedAvatar =
+    user?.avatarUrl && user.avatarUrl.startsWith('http')
+      ? user.avatarUrl
+      : user?.avatarUrl
+        ? `${baseUrl}${user.avatarUrl}`
+        : undefined
+  const avatarSrc = avatarPreview || resolvedAvatar
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !user?.id) return
+
+    const previewUrl = URL.createObjectURL(file)
+    setAvatarPreview(previewUrl)
+    setUploadingAvatar(true)
+
+    try {
+      const form = new FormData()
+      form.append('avatar', file)
+      const { data } = await api.put<User>(`/user/updateUser/${user.id}`, form)
+      setUser((prev) => (prev ? { ...prev, ...data } : data))
+      toast.success('Foto de perfil atualizada')
+    } catch (error) {
+      console.error(error)
+      toast.error('Não foi possível atualizar a foto')
+      setAvatarPreview(null)
+    } finally {
+      setUploadingAvatar(false)
+      URL.revokeObjectURL(previewUrl)
+    }
+  }
 
   return (
     <main className="relative overflow-hidden bg-background">
@@ -54,15 +88,25 @@ export default function Page() {
           <CardContent className="p-6 md:p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-wrap items-center gap-4">
-                <div className="relative">
+                <label className="relative group cursor-pointer">
                   <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(76,95,209,0.3),transparent_70%)] blur-xl" />
-                  <Avatar className="relative size-16 border border-border shadow-md">
+                  <Avatar className="relative size-16 border border-border shadow-md overflow-hidden">
                     {avatarSrc && (
                       <AvatarImage src={avatarSrc} alt={user?.name || 'Usuario'} />
                     )}
                     <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
                   </Avatar>
-                </div>
+                  <div className="absolute inset-0 rounded-full bg-slate-900/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] font-medium text-white">
+                    {uploadingAvatar ? 'Enviando...' : 'Trocar foto'}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                    disabled={uploadingAvatar}
+                  />
+                </label>
                 <div>
                   <h1 className="text-xl font-semibold text-foreground">
                     {user?.name || 'Usuario'}
@@ -86,15 +130,6 @@ export default function Page() {
                 id="name"
                 placeholder="Seu nome completo"
                 defaultValue={user?.name || ''}
-                disabled={loading}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="avatarUrl">URL do avatar</Label>
-              <Input
-                id="avatarUrl"
-                placeholder="https://..."
-                defaultValue={user?.avatarUrl || ''}
                 disabled={loading}
               />
             </div>

@@ -59,7 +59,6 @@ type StudentsServiceAPI = {
 type ClassItem = {
   id: string
   name: string
-  grade: string
   shift: string
   days_of_week: string[]
   start_time?: string
@@ -74,13 +73,9 @@ type Student = {
   name?: string
   full_name?: string
   class_id: string
+  grade?: string
 }
 
-const grades = [
-  '1º Ano','2º Ano','3º Ano','4º Ano','5º Ano',
-  '6º Ano','7º Ano','8º Ano','9º Ano',
-  '1º EM','2º EM','3º EM',
-]
 const shifts = ['Manhã', 'Tarde']
 const weekDays = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
 
@@ -104,7 +99,6 @@ export default function TurmaDetalhesPage() {
 
   const [formData, setFormData] = useState({
     name: '',
-    grade: '',
     shift: '',
     days_of_week: [] as string[],
     start_time: '',
@@ -131,7 +125,6 @@ export default function TurmaDetalhesPage() {
       if (found) {
         setFormData({
           name: found.name ?? '',
-          grade: found.grade ?? '',
           shift: found.shift ?? '',
           days_of_week: found.days_of_week ?? [],
           start_time: found.start_time ?? '',
@@ -195,8 +188,8 @@ export default function TurmaDetalhesPage() {
 
   async function saveTurma() {
     if (!turma) return
-    if (!formData.name || !formData.grade || !formData.shift) {
-      toast.error('Preencha Nome, Série e Turno.')
+    if (!formData.name || !formData.shift) {
+      toast.error('Preencha Nome e Turno.')
       return
     }
 
@@ -358,7 +351,6 @@ export default function TurmaDetalhesPage() {
                 />
 
                 <div className="flex flex-wrap gap-2 mt-3">
-                  <Badge variant="outline">{turma.grade}</Badge>
                   <Badge variant="secondary">{turma.shift}</Badge>
                   <Badge className={turma.status === 'Ativa' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}>
                     {turma.status}
@@ -463,7 +455,9 @@ export default function TurmaDetalhesPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-slate-900 font-medium truncate">{displayName}</p>
-                        <p className="text-slate-500 text-sm">ID: {}</p>
+                        <p className="text-slate-500 text-sm">
+                          {aluno.grade || '—'}
+                        </p>
                       </div>
                     </div>
 
@@ -544,7 +538,9 @@ export default function TurmaDetalhesPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-slate-900 font-medium truncate">{displayName}</p>
-                        <p className="text-slate-500 text-xs">ID: {s.id}</p>
+                        <p className="text-slate-500 text-xs">
+                          {s.grade || '—'}
+                        </p>
                       </div>
                     </div>
 
@@ -598,25 +594,6 @@ export default function TurmaDetalhesPage() {
                 placeholder="Ex: Turma A - Reforço"
                 className="mt-2 h-12 rounded-xl"
               />
-            </div>
-
-            <div>
-              <Label className="text-slate-700 font-medium">Série *</Label>
-              <Select
-                value={formData.grade}
-                onValueChange={(value) => setFormData({ ...formData, grade: value })}
-              >
-                <SelectTrigger className="mt-2 h-12 rounded-xl">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {grades.map((g) => (
-                    <SelectItem key={g} value={g}>
-                      {g}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
 
             <div>

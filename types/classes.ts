@@ -1,7 +1,6 @@
 export type ClassItem = {
   id: string
   name: string
-  grade: string
   shift: string
   days_of_week: string[]
   start_time?: string
@@ -15,7 +14,6 @@ export const classesMock: ClassItem[] = [
   {
     id: '1',
     name: 'Turma A - Reforço',
-    grade: '5º Ano',
     shift: 'Manhã',
     days_of_week: ['Segunda', 'Quarta'],
     start_time: '08:00',

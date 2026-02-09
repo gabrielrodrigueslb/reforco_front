@@ -49,6 +49,12 @@ const getWeekRange = () => {
   };
 };
 
+const addDays = (date: Date, days: number) => {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+};
+
 
 export default function Dashboard() {
   // Estado local
@@ -65,6 +71,7 @@ export default function Dashboard() {
 
   const today = getTodayISO();
   const { start: weekStart, end: weekEnd } = getWeekRange();
+  const upcomingEnd = toLocalISO(addDays(new Date(), 30));
 
   useEffect(() => {
     let mounted = true;
@@ -94,7 +101,7 @@ export default function Dashboard() {
               turmaId: null,
             }),
             AnnouncementsService.list(),
-            EventsService.list({ from: weekStart, to: weekEnd }),
+            EventsService.list({ from: today, to: upcomingEnd }),
           ]);
 
         const students: Student[] = (studentsRaw || []).map((s: StudentResponse) => ({
@@ -156,7 +163,7 @@ export default function Dashboard() {
     return () => {
       mounted = false;
     };
-  }, [today, weekStart, weekEnd]);
+  }, [today, weekStart, weekEnd, upcomingEnd]);
 
   // Cálculos derivados
   const activeStudents = data.students.filter((s) => s.status === 'Ativo');
