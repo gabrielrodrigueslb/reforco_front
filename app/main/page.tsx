@@ -19,7 +19,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import PageTitle from '@/components/page-title';
 import { StudentsService, StudentResponse } from '@/services/students.service';
 import { ClassesService } from '@/services/classes.service';
-import { AttendanceService, AttendanceRecord } from '@/services/attendance.service';
+import {
+  AttendanceService,
+  AttendanceRecord,
+} from '@/services/attendance.service';
 import { AnnouncementsService } from '@/services/announcements.service';
 import { EventsService } from '@/services/events.service';
 import type { ClassItem } from '@/types/classes';
@@ -62,7 +65,6 @@ const addDays = (date: Date, days: number) => {
   return d;
 };
 
-
 export default function Dashboard() {
   // Estado local
   const [data, setData] = useState<DashboardData>({
@@ -85,37 +87,48 @@ export default function Dashboard() {
     const load = async () => {
       setLoading(true);
       try {
-        const [studentsRaw, classesRaw, weekMorning, weekAfternoon, weekMorningPlain, announcements, eventsRaw] =
-          await Promise.all([
-            StudentsService.list(),
-            ClassesService.list(),
-            AttendanceService.history({
-              from: weekStart,
-              to: weekEnd,
-              turno: 'Manhã',
-              turmaId: null,
-            }),
-            AttendanceService.history({
-              from: weekStart,
-              to: weekEnd,
-              turno: 'Tarde',
-              turmaId: null,
-            }),
-            AttendanceService.history({
-              from: weekStart,
-              to: weekEnd,
-              turno: 'Manha',
-              turmaId: null,
-            }),
-            AnnouncementsService.list(),
-            EventsService.list({ from: today, to: upcomingEnd }),
-          ]);
+        const [
+          studentsRaw,
+          classesRaw,
+          weekMorning,
+          weekAfternoon,
+          weekMorningPlain,
+          announcements,
+          eventsRaw,
+        ] = await Promise.all([
+          StudentsService.list(),
+          ClassesService.list(),
+          AttendanceService.history({
+            from: weekStart,
+            to: weekEnd,
+            turno: 'Manhã',
+            turmaId: null,
+          }),
+          AttendanceService.history({
+            from: weekStart,
+            to: weekEnd,
+            turno: 'Tarde',
+            turmaId: null,
+          }),
+          AttendanceService.history({
+            from: weekStart,
+            to: weekEnd,
+            turno: 'Manha',
+            turmaId: null,
+          }),
+          AnnouncementsService.list(),
+          EventsService.list({ from: today, to: upcomingEnd }),
+        ]);
 
-        const students: Student[] = (studentsRaw || []).map((s: StudentResponse) => ({
-          id: s.id,
-          status: s.status,
-          performance_indicator: normalizePerformanceIndicator(s.performance_indicator),
-        }));
+        const students: Student[] = (studentsRaw || []).map(
+          (s: StudentResponse) => ({
+            id: s.id,
+            status: s.status,
+            performance_indicator: normalizePerformanceIndicator(
+              s.performance_indicator,
+            ),
+          }),
+        );
 
         const classes: Class[] = (classesRaw || []).map((c: ClassItem) => ({
           id: String(c.id),
@@ -172,7 +185,7 @@ export default function Dashboard() {
     };
   }, [today, weekStart, weekEnd, upcomingEnd]);
 
-  // CÃ¡lculos derivados
+  // Cálculos derivados
   const activeStudents = data.students.filter((s) => s.status === 'Ativo');
   const activeClasses = data.classes.filter((c) => c.status === 'Ativa');
   const presentToday = data.todayAttendance.filter(
@@ -263,4 +276,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
