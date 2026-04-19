@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -115,6 +115,7 @@ type Props = {
   subjects: string[]
 
   toggleSubject: (subject: string) => void
+  onAddSubject?: (name: string) => Promise<string | null>
 
   onSave: () => void
   isSaving: boolean
@@ -165,10 +166,28 @@ export default function NewStudentModal({
   bloodTypes,
   subjects,
   toggleSubject,
+  onAddSubject,
   onSave,
   isSaving,
 }: Props) {
   const age = useMemo(() => calcAge(studentData.birth_date), [studentData.birth_date])
+  const [newSubject, setNewSubject] = useState('')
+  const [addingSubject, setAddingSubject] = useState(false)
+
+  const handleAddSubject = async () => {
+    const name = newSubject.trim()
+    if (!name || !onAddSubject) return
+    setAddingSubject(true)
+    try {
+      const created = await onAddSubject(name)
+      if (created) {
+        toggleSubject(created)
+        setNewSubject('')
+      }
+    } finally {
+      setAddingSubject(false)
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -662,6 +681,26 @@ export default function NewStudentModal({
                               </button>
                             )
                           })}
+                        </div>
+                        <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                          <Input
+                            value={newSubject}
+                            onChange={(e) => setNewSubject(e.target.value)}
+                            placeholder="Adicionar nova matéria"
+                            className="h-11"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleAddSubject}
+                            disabled={addingSubject || !newSubject.trim()}
+                            className="h-11"
+                          >
+                            {addingSubject ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : null}
+                            Adicionar
+                          </Button>
                         </div>
                       </div>
 

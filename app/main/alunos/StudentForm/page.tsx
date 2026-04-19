@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { ArrowLeft, BookOpen, Heart, Loader2, Pencil, Save, User } from 'lucide-react'
 
 import { StudentsService, StudentResponse } from '@/services/students.service'
+import { SubjectsService } from '@/services/subjects.service'
 import PageTitle from '@/components/page-title'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,6 +21,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
+import {
+  DEFAULT_SUBJECTS,
+  areSameSubjects,
+  mapSubjectsToCanonical,
+  mergeSubjects,
+  normalizeSubject,
+  sortSubjects,
+} from '@/lib/subjects'
 
 type StudentFormData = {
   full_name: string
@@ -85,13 +95,6 @@ function mapBloodTypeValue(value: string) {
   return mapped || value
 }
 
-function parseSubjects(value: string) {
-  return value
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
-
 function calculateAge(birthDate: string) {
   if (!birthDate) return null
   const today = new Date()
@@ -114,6 +117,9 @@ export default function StudentFormPage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoUrl, setPhotoUrl] = useState<string>('/astronautaconfuso.png')
   const [initialForm, setInitialForm] = useState<StudentFormData | null>(null)
+  const [subjects, setSubjects] = useState<string[]>(DEFAULT_SUBJECTS)
+  const [newSubject, setNewSubject] = useState('')
+  const [addingSubject, setAddingSubject] = useState(false)
 
   const [form, setForm] = useState<StudentFormData>({
     full_name: '',
@@ -134,6 +140,22 @@ export default function StudentFormPage() {
     previous_tutoring: null,
     performance_indicator: 'Não avaliado',
   })
+
+  useEffect(() => {
+    let active = true
+    SubjectsService.list()
+      .then((list) => {
+        if (!active) return
+        setSubjects(sortSubjects(mergeSubjects(list, DEFAULT_SUBJECTS)))
+      })
+      .catch(() => {
+        if (!active) return
+        setSubjects([...DEFAULT_SUBJECTS])
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!id) {
@@ -174,6 +196,15 @@ export default function StudentFormPage() {
       })
   }, [id])
 
+  useEffect(() => {
+    if (!subjects.length) return
+    setForm((prev) => {
+      const mapped = mapSubjectsToCanonical(prev.difficulty_subjects, subjects)
+      if (areSameSubjects(mapped, prev.difficulty_subjects)) return prev
+      return { ...prev, difficulty_subjects: mapped }
+    })
+  }, [subjects])
+
   const photoPreview = useMemo(() => {
     if (photoFile) return URL.createObjectURL(photoFile)
     return photoUrl || ''
@@ -195,6 +226,44 @@ export default function StudentFormPage() {
     setPhotoFile(file)
   }
 
+  const toggleSubject = (subject: string) => {
+    setForm((prev) => {
+      const current = prev.difficulty_subjects || []
+      const updated = current.includes(subject)
+        ? current.filter((item) => item !== subject)
+        : [...current, subject]
+      return { ...prev, difficulty_subjects: updated }
+    })
+  }
+
+  const handleAddSubject = async () => {
+    const name = newSubject.trim()
+    if (!name) return
+    setAddingSubject(true)
+    try {
+      const normalized = normalizeSubject(name)
+      const existing = subjects.find(
+        (subject) => normalizeSubject(subject) === normalized,
+      )
+      const created = existing || (await SubjectsService.create(name))
+      if (!existing) {
+        setSubjects((prev) =>
+          sortSubjects(mergeSubjects(prev, [created])),
+        )
+      }
+      setForm((prev) => {
+        const current = prev.difficulty_subjects || []
+        if (current.includes(created)) return prev
+        return { ...prev, difficulty_subjects: [...current, created] }
+      })
+      setNewSubject('')
+    } catch {
+      toast.error('Não foi possível adicionar a matéria')
+    } finally {
+      setAddingSubject(false)
+    }
+  }
+
   const hasChanges = useMemo(() => {
     if (!initialForm) return false
     if (photoFile) return true
@@ -210,6 +279,14 @@ export default function StudentFormPage() {
       return
     }
 
+    const normalizedForm: StudentFormData = {
+      ...form,
+      difficulty_subjects: mapSubjectsToCanonical(
+        form.difficulty_subjects,
+        subjects,
+      ),
+    }
+
     setSaving(true)
     try {
       const changes: Partial<StudentFormData> = {}
@@ -220,12 +297,12 @@ export default function StudentFormPage() {
         changes[key] = value
       }
       if (initialForm) {
-        (Object.keys(form) as Array<keyof StudentFormData>).forEach((key) => {
-          const value = form[key]
+        (Object.keys(normalizedForm) as Array<keyof StudentFormData>).forEach((key) => {
+          const value = normalizedForm[key]
           if (value !== initialForm[key]) setChange(key, value)
         })
       } else {
-        Object.assign(changes, form)
+        Object.assign(changes, normalizedForm)
       }
 
       if (Object.keys(changes).length > 0) {
@@ -248,7 +325,10 @@ export default function StudentFormPage() {
           previous_tutoring: changes.previous_tutoring,
           performance_indicator: changes.performance_indicator,
         })
-        setInitialForm(form)
+        if (!areSameSubjects(normalizedForm.difficulty_subjects, form.difficulty_subjects)) {
+          setForm(normalizedForm)
+        }
+        setInitialForm(normalizedForm)
       }
 
       if (photoFile) {
@@ -525,17 +605,46 @@ export default function StudentFormPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <Label>Matérias com dificuldade</Label>
-            <Input
-              value={form.difficulty_subjects.join(', ')}
-              onChange={(e) =>
-                setForm({ ...form, difficulty_subjects: parseSubjects(e.target.value) })
-              }
-              className="mt-2 h-11 rounded-xl"
-              placeholder="Ex.: Matemática, Português, Ciências"
-            />
-            <p className="text-xs text-slate-500 mt-2">
-              Separe as matérias por vírgula.
-            </p>
+            <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {subjects.map((subject) => {
+                const active = (form.difficulty_subjects || []).includes(subject)
+                return (
+                  <button
+                    key={subject}
+                    type="button"
+                    onClick={() => toggleSubject(subject)}
+                    className={cn(
+                      'h-11 rounded-xl border px-3 text-left text-sm transition-colors',
+                      active
+                        ? 'border-indigo-500 bg-indigo-50'
+                        : 'border-slate-200 hover:border-slate-300',
+                    )}
+                  >
+                    {subject}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="mt-3 flex flex-col sm:flex-row gap-2">
+              <Input
+                value={newSubject}
+                onChange={(e) => setNewSubject(e.target.value)}
+                placeholder="Adicionar nova matéria"
+                className="h-11"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddSubject}
+                disabled={addingSubject || !newSubject.trim()}
+                className="h-11"
+              >
+                {addingSubject ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : null}
+                Adicionar
+              </Button>
+            </div>
           </div>
 
           <div className="md:col-span-2">

@@ -1,4 +1,4 @@
-interface LoginResponse {
+﻿interface LoginResponse {
   token: string;
   user: {
     id: string;
@@ -12,6 +12,11 @@ interface loginRequestParams {
   password: string;
 }
 
+function tenantHeaders() {
+  const slug = process.env.NEXT_PUBLIC_TENANT_SLUG;
+  return slug ? { 'x-tenant': slug } : {};
+}
+
 export async function loginRequest({
   email,
   password,
@@ -20,8 +25,9 @@ export async function loginRequest({
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...tenantHeaders(),
     },
-    credentials: 'include', // 🔥 OBRIGATÓRIO
+    credentials: 'include',
     body: JSON.stringify({ email, password }),
   });
 
@@ -34,14 +40,15 @@ export async function loginRequest({
 }
 
 export async function getSession() {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
-    { method: 'GET',
-      credentials: 'include',
-    }
-  );
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      ...tenantHeaders(),
+    },
+  });
 
-   if (!res.ok) return null;
+  if (!res.ok) return null;
 
   return res.json();
 }
@@ -50,7 +57,8 @@ export async function logoutRequest() {
   await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
     method: 'POST',
     credentials: 'include',
+    headers: {
+      ...tenantHeaders(),
+    },
   });
 }
-
-

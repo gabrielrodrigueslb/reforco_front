@@ -29,6 +29,8 @@ import PageTitle from '@/components/page-title'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuSeparator,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -61,6 +63,14 @@ import {
 import ImportStudentsModal from '@/components/alunos/ImportStudentsModal'
 import NewStudentModal from '@/components/alunos/NewStudentModal'
 import { StudentsService, StudentPayload, StudentResponse } from '@/services/students.service'
+import { SubjectsService } from '@/services/subjects.service'
+import {
+  DEFAULT_SUBJECTS,
+  mapSubjectsToCanonical,
+  mergeSubjects,
+  normalizeSubject,
+  sortSubjects,
+} from '@/lib/subjects'
 
 type Guardian = {
   is_primary: boolean
@@ -129,7 +139,7 @@ type Filters = {
   grade: string
   shift: string
   status: string
-  difficulty: string
+  difficulty: string[]
 }
 
 const createPageUrl = (path: string) => `/main/alunos/${path}`
@@ -142,7 +152,6 @@ const grades = [
 const shifts = ['Manhã', 'Tarde']
 const relationships = ['Pai','Mãe','Avó','Avô','Tio(a)','Irmão(ã)','Responsável Legal','Outro']
 const bloodTypes = ['A+','A-','B+','B-','AB+','AB-','O+','O-','Não informado']
-const subjects = ['Português','Matemática','Ciências','História','Geografia','Inglês','Artes','Ed. Fí­sica']
 
 const performanceColors: Record<string, string> = {
   Melhorando: 'bg-emerald-100 text-emerald-700',
@@ -182,11 +191,14 @@ export default function Students() {
     grade: '',
     shift: '',
     status: '',
-    difficulty: '',
+    difficulty: [],
   })
 
   const [pageSize, setPageSize] = useState(15)
   const [currentPage, setCurrentPage] = useState(1)
+
+  const [subjects, setSubjects] = useState<string[]>(DEFAULT_SUBJECTS)
+  const [subjectsLoading, setSubjectsLoading] = useState(false)
 
   // ===== NEW STUDENT STATES =====
   const [activeTab, setActiveTab] = useState('data')
@@ -301,13 +313,40 @@ export default function Students() {
     fetchStudents()
   }, [fetchStudents])
 
+  useEffect(() => {
+    let active = true
+    setSubjectsLoading(true)
+    SubjectsService.list()
+      .then((list) => {
+        if (!active) return
+        setSubjects(sortSubjects(mergeSubjects(list, DEFAULT_SUBJECTS)))
+      })
+      .catch(() => {
+        if (!active) return
+        setSubjects([...DEFAULT_SUBJECTS])
+      })
+      .finally(() => {
+        if (!active) return
+        setSubjectsLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
       if (filters.search && !student.full_name?.toLowerCase().includes(filters.search.toLowerCase())) return false
       if (filters.grade && student.grade !== filters.grade) return false
       if (filters.shift && student.shift !== filters.shift) return false
       if (filters.status && student.status !== filters.status) return false
-      if (filters.difficulty && !student.difficulty_subjects?.includes(filters.difficulty)) return false
+      if (filters.difficulty.length > 0) {
+        const selected = filters.difficulty.map(normalizeSubject)
+        const studentSubjects = (student.difficulty_subjects || []).map(normalizeSubject)
+        const hasAny = selected.some((subject) => studentSubjects.includes(subject))
+        if (!hasAny) return false
+      }
       return true
     })
   }, [students, filters])
@@ -354,6 +393,31 @@ export default function Students() {
     })
   }, [])
 
+  const handleAddSubject = useCallback(
+    async (rawName: string) => {
+      const name = String(rawName || '').trim()
+      if (!name) return null
+
+      const normalized = normalizeSubject(name)
+      const existing = subjects.find(
+        (subject) => normalizeSubject(subject) === normalized,
+      )
+      if (existing) return existing
+
+      try {
+        const created = await SubjectsService.create(name)
+        setSubjects((prev) =>
+          sortSubjects(mergeSubjects(prev, [created])),
+        )
+        return created
+      } catch {
+        toast.error('Não foi possível adicionar a matéria')
+        return null
+      }
+    },
+    [subjects],
+  )
+
   const handleSaveStudent = useCallback(async () => {
     if (!studentData.full_name || !studentData.birth_date || !studentData.grade || !studentData.shift) {
       toast.error('Preencha todos os campos obrigatórios na aba "Dados"')
@@ -381,8 +445,13 @@ export default function Students() {
 
     setIsSaving(true)
     try {
+      const canonicalSubjects = mapSubjectsToCanonical(
+        studentData.difficulty_subjects,
+        subjects,
+      )
       const payload: StudentPayload = {
         ...studentData,
+        difficulty_subjects: canonicalSubjects,
         guardians: hasGuardian2 ? [guardian1, guardian2] : [guardian1],
       }
 
@@ -396,18 +465,56 @@ export default function Students() {
     } finally {
       setIsSaving(false)
     }
-  }, [studentData, guardian1, guardian2, hasGuardian2, resetNewForm])
+  }, [studentData, guardian1, guardian2, hasGuardian2, resetNewForm, subjects])
 
   const clearFilters = useCallback(() => {
-    setFilters({ search: '', grade: '', shift: '', status: '', difficulty: '' })
+    setFilters({ search: '', grade: '', shift: '', status: '', difficulty: [] })
   }, [])
 
   const hasAnyFilter = useMemo(() => {
-    return Object.values(filters).some(Boolean)
+    return Boolean(
+      filters.search ||
+        filters.grade ||
+        filters.shift ||
+        filters.status ||
+        filters.difficulty.length > 0,
+    )
   }, [filters])
 
   // Helper: quando o Select voltar ALL, vira '' no estado
   const toFilterValue = (v: string) => (v === ALL ? '' : v)
+
+  const toggleDifficulty = useCallback((subject: string) => {
+    setFilters((prev) => {
+      const current = prev.difficulty || []
+      const exists = current.includes(subject)
+      return {
+        ...prev,
+        difficulty: exists
+          ? current.filter((item) => item !== subject)
+          : [...current, subject],
+      }
+    })
+  }, [])
+
+  const allDifficultiesSelected =
+    subjects.length > 0 && filters.difficulty.length === subjects.length
+
+  const handleToggleAllDifficulties = useCallback(() => {
+    setFilters((prev) => ({
+      ...prev,
+      difficulty: allDifficultiesSelected ? [] : [...subjects],
+    }))
+  }, [allDifficultiesSelected, subjects])
+
+  const difficultyLabel = useMemo(() => {
+    if (filters.difficulty.length === 0) return 'Todas'
+    if (subjects.length > 0 && filters.difficulty.length === subjects.length) {
+      return 'Todas'
+    }
+    if (filters.difficulty.length === 1) return filters.difficulty[0]
+    return `${filters.difficulty.length} selecionadas`
+  }, [filters.difficulty, subjects.length])
 
   return (
     <div className="space-y-5 animate-in fade-in duration-150">
@@ -562,20 +669,43 @@ export default function Students() {
 
             <div className="space-y-1">
               <div className="text-xs text-slate-500">Dificuldade</div>
-              <Select
-                value={filters.difficulty || ALL}
-                onValueChange={(v) => setFilters((p) => ({ ...p, difficulty: toFilterValue(v) }))}
-              >
-                <SelectTrigger className="h-11 rounded-xl w-full">
-                  <SelectValue placeholder="Todas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Todas</SelectItem>
-                  {subjects.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'h-11 w-full justify-between rounded-xl text-left',
+                      filters.difficulty.length > 0 && 'border-indigo-300 bg-indigo-50',
+                    )}
+                  >
+                    <span className="truncate">{difficultyLabel}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-64">
+                  <DropdownMenuCheckboxItem
+                    checked={allDifficultiesSelected}
+                    onCheckedChange={handleToggleAllDifficulties}
+                  >
+                    Selecionar todas
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuSeparator />
+                  {subjects.map((subject) => (
+                    <DropdownMenuCheckboxItem
+                      key={subject}
+                      checked={filters.difficulty.includes(subject)}
+                      onCheckedChange={() => toggleDifficulty(subject)}
+                    >
+                      {subject}
+                    </DropdownMenuCheckboxItem>
                   ))}
-                </SelectContent>
-              </Select>
+                  {subjects.length === 0 && (
+                    <DropdownMenuItem disabled>Sem matérias cadastradas</DropdownMenuItem>
+                  )}
+                  {subjectsLoading && (
+                    <DropdownMenuItem disabled>Carregando matérias...</DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -856,6 +986,7 @@ export default function Students() {
         bloodTypes={bloodTypes}
         subjects={subjects}
         toggleSubject={toggleSubject}
+        onAddSubject={handleAddSubject}
         onSave={handleSaveStudent}
         isSaving={isSaving}
       />
@@ -865,6 +996,7 @@ export default function Students() {
         open={showImportModal}
         onOpenChange={setShowImportModal}
         templateHref="/templates/Modelo_Importacao_Alunos.xlsx"
+        subjects={subjects}
         onImported={(newStudents: StudentResponse[]) => {
           setStudents((prev) => sortStudentsByName([...(newStudents as Student[]), ...prev]))
           toast.success('Alunos importados com sucesso!')

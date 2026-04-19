@@ -8,3 +8,8 @@ export const api = axios.create({
     'x-api-key': process.env.NEXT_PUBLIC_API_KEY,
   },
 });
+
+const tenantSlug = process.env.NEXT_PUBLIC_TENANT_SLUG;
+if (tenantSlug) {
+  api.defaults.headers.common['x-tenant'] = tenantSlug;
+}

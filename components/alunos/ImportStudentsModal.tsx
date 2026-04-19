@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { mapSubjectsToCanonical } from '@/lib/subjects'
 import { Check, FileSpreadsheet, Loader2, Upload, User, Users, Heart, BookOpen, Save, ArrowLeft } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
@@ -58,6 +59,7 @@ type Props = {
   onOpenChange: (open: boolean) => void
   onImported: (students: StudentResponse[]) => void
   templateHref?: string
+  subjects?: string[]
 }
 
 // --- CONFIGURAÇÃO DOS CAMPOS (Adicionado ID para filtro) ---
@@ -192,6 +194,7 @@ export default function ImportStudentsModal({
   onOpenChange,
   onImported,
   templateHref = '/templates/Modelo_Importacao_Alunos.xlsx',
+  subjects = [],
 }: Props) {
   const [importStep, setImportStep] = useState(1)
   const [activeTab, setActiveTab] = useState('data')
@@ -392,6 +395,9 @@ export default function ImportStudentsModal({
     const medications = normalizeText(getFieldValue(row, 'medications'))
     const behavior_notes = normalizeText(getFieldValue(row, 'behavior_notes'))
     const difficulty_subjects = parseList(getFieldValue(row, 'difficulty_subjects'))
+    const normalizedSubjects = subjects.length
+      ? mapSubjectsToCanonical(difficulty_subjects, subjects)
+      : difficulty_subjects
     const difficulty_reaction = normalizeText(getFieldValue(row, 'difficulty_reaction'))
     const previous_tutoring = parseBoolean(getFieldValue(row, 'previous_tutoring'))
 
@@ -410,7 +416,9 @@ export default function ImportStudentsModal({
     const payload: StudentPayload = {
       full_name, birth_date, grade, shift, cpf, address,
       status: 'Ativo', performance_indicator: 'Não avaliado',
-      difficulty_subjects, difficulty_reaction: difficulty_reaction || undefined, previous_tutoring,
+      difficulty_subjects: normalizedSubjects,
+      difficulty_reaction: difficulty_reaction || undefined,
+      previous_tutoring,
     }
     if (origin_school) payload.origin_school = origin_school
     if (allergies) payload.allergies = allergies

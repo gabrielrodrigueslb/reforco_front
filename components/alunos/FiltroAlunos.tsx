@@ -9,19 +9,29 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import { DEFAULT_SUBJECTS } from '@/lib/subjects'
 
 type Filters = {
   search: string
   grade: string
   shift: string
   status: string
-  difficulty: string
+  difficulty: string[]
 }
 
 type StudentFiltersProps = {
   filters: Filters
   setFilters: React.Dispatch<React.SetStateAction<Filters>>
+  subjects?: string[]
 }
 
 const grades = [
@@ -40,10 +50,10 @@ const grades = [
 ]
 const shifts = ['Manhã', 'Tarde']
 const statuses = ['Ativo', 'Inativo']
-const subjects = ['Português', 'Matemática', 'Ciências', 'História', 'Geografia', 'Inglês']
-
-export default function StudentFilters({ filters, setFilters }: StudentFiltersProps) {
-  const hasFilters = filters.grade || filters.shift || filters.status || filters.difficulty
+export default function StudentFilters({ filters, setFilters, subjects }: StudentFiltersProps) {
+  const subjectOptions = subjects?.length ? subjects : DEFAULT_SUBJECTS
+  const hasFilters =
+    filters.grade || filters.shift || filters.status || filters.difficulty.length > 0
 
   const clearFilters = () => {
     setFilters({
@@ -51,9 +61,35 @@ export default function StudentFilters({ filters, setFilters }: StudentFiltersPr
       grade: '',
       shift: '',
       status: '',
-      difficulty: '',
+      difficulty: [],
     })
   }
+
+  const toggleDifficulty = (subject: string) => {
+    setFilters((prev) => {
+      const current = prev.difficulty || []
+      const updated = current.includes(subject)
+        ? current.filter((item) => item !== subject)
+        : [...current, subject]
+      return { ...prev, difficulty: updated }
+    })
+  }
+
+  const allSelected =
+    subjectOptions.length > 0 && filters.difficulty.length === subjectOptions.length
+  const handleToggleAll = () => {
+    setFilters((prev) => ({
+      ...prev,
+      difficulty: allSelected ? [] : [...subjectOptions],
+    }))
+  }
+
+  const difficultyLabel = (() => {
+    if (filters.difficulty.length === 0) return 'Todas'
+    if (filters.difficulty.length === 1) return filters.difficulty[0]
+    if (allSelected) return 'Todas'
+    return `${filters.difficulty.length} selecionadas`
+  })()
 
   return (
     <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-4">
@@ -136,26 +172,37 @@ export default function StudentFilters({ filters, setFilters }: StudentFiltersPr
           </SelectContent>
         </Select>
 
-        <Select
-          value={filters.difficulty}
-          onValueChange={(value) => setFilters({ ...filters, difficulty: value })}
-        >
-          <SelectTrigger
-            className={cn(
-              'w-36 h-10 rounded-xl',
-              filters.difficulty && 'border-indigo-300 bg-indigo-50',
-            )}
-          >
-            <SelectValue placeholder="Dificuldade" />
-          </SelectTrigger>
-          <SelectContent>
-            {subjects.map((s) => (
-              <SelectItem key={s} value={s}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                'w-44 h-10 rounded-xl justify-between',
+                filters.difficulty.length > 0 && 'border-indigo-300 bg-indigo-50',
+              )}
+            >
+              {difficultyLabel}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuCheckboxItem checked={allSelected} onCheckedChange={handleToggleAll}>
+              Selecionar todas
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuSeparator />
+            {subjectOptions.map((s) => (
+              <DropdownMenuCheckboxItem
+                key={s}
+                checked={filters.difficulty.includes(s)}
+                onCheckedChange={() => toggleDifficulty(s)}
+              >
                 {s}
-              </SelectItem>
+              </DropdownMenuCheckboxItem>
             ))}
-          </SelectContent>
-        </Select>
+            {subjectOptions.length === 0 && (
+              <DropdownMenuItem disabled>Sem matérias cadastradas</DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {hasFilters ? (
           <Button

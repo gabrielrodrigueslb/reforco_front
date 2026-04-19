@@ -1,4 +1,4 @@
-import { clsx, type ClassValue } from "clsx"
+﻿import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
@@ -7,11 +7,13 @@ export function cn(...inputs: ClassValue[]) {
 
 export function FormatRole(role: string) {
   switch (role) {
+    case 'SUPER_ADMIN':
+      return 'Super Admin'
     case 'ADMIN':
       return 'Admin'
-    case 'User':
+    case 'USER':
       return 'Professor'
     default:
-      return 'Usuário'
+      return 'Usuario'
   }
 }
